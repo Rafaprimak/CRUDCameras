@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'screens/camera_list_screen.dart';
+import 'screens/welcome_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -23,7 +23,6 @@ class MyApp extends StatelessWidget {
           tertiary: Colors.black,
           onTertiary: Colors.white,
           surface: Colors.white,
-          background: Colors.white,
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.yellow,
@@ -43,7 +42,7 @@ class MyApp extends StatelessWidget {
           },
         ),
       ),
-      home: const CameraListScreen(),
+      home: const WelcomeScreen(),
     );
   }
 }
