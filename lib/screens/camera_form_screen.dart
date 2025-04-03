@@ -94,7 +94,6 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, informe o endereço IP';
                   }
-                  // Simple IP validation
                   final ipRegex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}$');
                   if (!ipRegex.hasMatch(value)) {
                     return 'Por favor, informe um endereço IP válido';

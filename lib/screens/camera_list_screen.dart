@@ -4,6 +4,7 @@ import '../models/camera.dart';
 import '../services/camera_service.dart';
 import '../utils/custom_route.dart';
 import 'camera_form_screen.dart';
+import 'welcome_screen.dart';
 
 class CameraListScreen extends StatefulWidget {
   const CameraListScreen({super.key});
@@ -19,7 +20,39 @@ class _CameraListScreenState extends State<CameraListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cameras Cadastradas'),
+        title: const Text('Câmeras Cadastradas'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sair',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Sair do aplicativo'),
+                  content: const Text('Tem certeza que deseja sair?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => const WelcomeScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      },
+                      child: const Text('Sair'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: _buildCameraList(),
       floatingActionButton: FloatingActionButton(
