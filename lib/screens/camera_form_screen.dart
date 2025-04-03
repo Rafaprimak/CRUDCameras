@@ -49,7 +49,17 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Editar Câmera' : 'Nova Câmera'),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/armadillo_logo.png',
+              width: 30, 
+              height: 30, 
+            ),
+            const SizedBox(width: 10),
+            Text(_isEditing ? 'Editar Câmera' : 'Nova Câmera'),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

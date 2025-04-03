@@ -20,7 +20,17 @@ class _CameraListScreenState extends State<CameraListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Câmeras Cadastradas'),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/armadillo_logo.png',
+              width: 30,
+              height: 30,
+            ),
+            const SizedBox(width: 10),
+            const Text('Câmeras Cadastradas'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),

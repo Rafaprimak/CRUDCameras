@@ -13,6 +13,12 @@ class WelcomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Image.asset(
+              'assets/images/armadillo_logo.png',
+              width: 150,
+              height: 150,
+            ),
+            const SizedBox(height: 20),
             const Text(
               'Armadillo',
               style: TextStyle(
