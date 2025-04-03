@@ -4,6 +4,7 @@ class Camera {
   String brand;
   String model;
   String ipAddress;
+  String address; 
   bool isActive;
 
   Camera({
@@ -12,6 +13,7 @@ class Camera {
     required this.brand,
     required this.model,
     required this.ipAddress,
+    required this.address, 
     this.isActive = true,
   });
 
@@ -21,6 +23,7 @@ class Camera {
         brand = map['brand'],
         model = map['model'],
         ipAddress = map['ipAddress'],
+        address = map['address'], 
         isActive = map['isActive'];
 
   Map<String, dynamic> toMap() {
@@ -30,6 +33,7 @@ class Camera {
       'brand': brand,
       'model': model,
       'ipAddress': ipAddress,
+      'address': address, 
       'isActive': isActive,
     };
   }

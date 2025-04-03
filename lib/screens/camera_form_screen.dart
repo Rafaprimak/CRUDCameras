@@ -17,6 +17,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
   final CameraService _cameraService = CameraService();
   
   final _nameController = TextEditingController();
+  final _addressController = TextEditingController();
   final _brandController = TextEditingController();
   final _modelController = TextEditingController();
   final _ipAddressController = TextEditingController();
@@ -32,6 +33,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
       _brandController.text = widget.camera!.brand;
       _modelController.text = widget.camera!.model;
       _ipAddressController.text = widget.camera!.ipAddress;
+      _addressController.text = widget.camera!.address;
       _isActive = widget.camera!.isActive;
     }
   }
@@ -39,6 +41,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _addressController.dispose();
     _brandController.dispose();
     _modelController.dispose();
     _ipAddressController.dispose();
@@ -73,6 +76,16 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, informe o nome';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: _addressController,
+                decoration: const InputDecoration(labelText: 'Endereço'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, informe o endereço';
                   }
                   return null;
                 },
@@ -150,6 +163,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           brand: _brandController.text,
           model: _modelController.text,
           ipAddress: _ipAddressController.text,
+          address: _addressController.text,
           isActive: _isActive,
         );
         _cameraService.updateCamera(updatedCamera);
@@ -159,6 +173,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           _brandController.text,
           _modelController.text,
           _ipAddressController.text,
+          _addressController.text,
         );
       }
       Navigator.pop(context, true);

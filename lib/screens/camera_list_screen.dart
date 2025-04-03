@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/camera.dart';
 import '../services/camera_service.dart';
 import '../utils/custom_route.dart';
+import 'camera_details_screen.dart';
 import 'camera_form_screen.dart';
 import 'welcome_screen.dart';
 
@@ -107,7 +108,7 @@ class _CameraListScreenState extends State<CameraListScreen> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${camera.brand} ${camera.model}'),
+                Text(camera.address),
                 Text('IP: ${camera.ipAddress}'),
                 Text(
                   camera.isActive ? 'Ativa' : 'Inativa',
@@ -121,6 +122,11 @@ class _CameraListScreenState extends State<CameraListScreen> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.visibility),
+                  tooltip: 'Ver detalhes',
+                  onPressed: () => _navigateToCameraDetails(context, camera),
+                ),
                 IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: () => _navigateToCameraForm(context, camera: camera),
@@ -170,6 +176,15 @@ class _CameraListScreenState extends State<CameraListScreen> {
             child: const Text('Excluir'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _navigateToCameraDetails(BuildContext context, Camera camera) {
+    Navigator.push(
+      context,
+      CustomPageRoute(
+        child: CameraDetailsScreen(camera: camera),
       ),
     );
   }

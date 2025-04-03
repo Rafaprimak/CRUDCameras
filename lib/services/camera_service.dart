@@ -16,13 +16,15 @@ class CameraService {
 
   List<Camera> get cameras => List.unmodifiable(_cameras);
 
-  Camera addCamera(String name, String brand, String model, String ipAddress) {
+  Camera addCamera(String name, String brand, String model, String ipAddress, String address) {
     final camera = Camera(
       id: _uuid.v4(),
       name: name,
       brand: brand,
       model: model,
       ipAddress: ipAddress,
+      address: address,
+      isActive: true,
     );
     _cameras.add(camera);
     return camera;
