@@ -11,19 +11,10 @@ class CameraDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/images/armadillo_logo.png',
-              width: 30,
-              height: 30,
-            ),
-            const SizedBox(width: 10),
-            const Text('Detalhes da Câmera'),
-          ],
-        ),
+        centerTitle: true, 
+        title: const Text('Detalhes da Câmera'),
       ),
-      // Wrap the body content in SingleChildScrollView to make it scrollable
+      
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -34,7 +25,7 @@ class CameraDetailsScreen extends StatelessWidget {
               const SizedBox(height: 24),
               _buildInfoCard('Informações Gerais', [
                 _buildInfoRow('Nome:', camera.name),
-                _buildInfoRow('Endereço:', camera.address), // Nova linha
+                _buildInfoRow('Endereço:', camera.address), 
                 _buildInfoRow('Marca:', camera.brand),
                 _buildInfoRow('Modelo:', camera.model),
               ]),
@@ -47,7 +38,7 @@ class CameraDetailsScreen extends StatelessWidget {
                 _buildStatusRow('Status:', camera.isActive ? 'Ativa' : 'Inativa', 
                     camera.isActive ? Colors.green : Colors.red),
               ]),
-              // Add some bottom padding for better scrolling experience
+              
               const SizedBox(height: 20),
             ],
           ),

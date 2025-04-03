@@ -52,17 +52,8 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/images/armadillo_logo.png',
-              width: 30, 
-              height: 30, 
-            ),
-            const SizedBox(width: 10),
-            Text(_isEditing ? 'Editar Câmera' : 'Nova Câmera'),
-          ],
-        ),
+        centerTitle: true, 
+        title: Text(_isEditing ? 'Editar Câmera' : 'Adicionar Câmera'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -137,7 +128,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
               ElevatedButton(
                 onPressed: _saveCamera,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.yellow, 
+                  backgroundColor: const Color(0xFFffc112), 
                   foregroundColor: Colors.black, 
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                   textStyle: const TextStyle(

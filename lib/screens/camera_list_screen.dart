@@ -20,18 +20,16 @@ class _CameraListScreenState extends State<CameraListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/images/armadillo_logo.png',
-              width: 30,
-              height: 30,
-            ),
-            const SizedBox(width: 10),
-            const Text('Câmeras Cadastradas'),
-          ],
+        centerTitle: true,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Image.asset(
+            'assets/images/armadillo_logo.png',
+          ),
         ),
+        title: const Text('Câmeras Cadastradas'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -65,7 +63,77 @@ class _CameraListScreenState extends State<CameraListScreen> {
           ),
         ],
       ),
-      body: _buildCameraList(),
+      body: Stack(
+        children: [
+          Positioned(
+            top: 20,
+            left: 20,
+            right: 20,
+            bottom: 20,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFe9e9e6), 
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    // ignore: deprecated_member_use
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 10,
+                    spreadRadius: -5,
+                    offset: const Offset(0, 0),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _buildCameraList(),
+          Positioned(
+            bottom: 30,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('S.O.S'),
+                      content: const Text('Enviando pedido de socorro...'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFff1b1c),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.warning_amber_rounded),
+                    SizedBox(width: 8),
+                    Text('S.O.S'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToCameraForm(context),
         child: const Icon(Icons.add),
@@ -83,6 +151,7 @@ class _CameraListScreenState extends State<CameraListScreen> {
     }
     
     return ListView.builder(
+      padding: const EdgeInsets.all(24),
       itemCount: cameras.length,
       itemBuilder: (context, index) {
         final camera = cameras[index];

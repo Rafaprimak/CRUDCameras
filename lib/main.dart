@@ -10,6 +10,8 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
+    final Color customYellow = const Color(0xFFffc112);
+    
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Camera Management',
@@ -34,7 +36,7 @@ class MyApp extends StatelessWidget {
           labelSmall: TextStyle(fontFamily: 'Karla'),
         ),
         colorScheme: ColorScheme.light(
-          primary: Colors.yellow,
+          primary: customYellow,
           onPrimary: Colors.black,
           secondary: Colors.white,
           onSecondary: Colors.black,
@@ -42,12 +44,12 @@ class MyApp extends StatelessWidget {
           onTertiary: Colors.white,
           surface: Colors.white,
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.yellow,
+        appBarTheme: AppBarTheme(
+          backgroundColor: customYellow,
           foregroundColor: Colors.black,
         ),
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Colors.yellow,
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: customYellow,
           foregroundColor: Colors.black,
         ),
         pageTransitionsTheme: const PageTransitionsTheme(
