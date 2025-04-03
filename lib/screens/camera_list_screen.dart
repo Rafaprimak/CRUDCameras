@@ -77,13 +77,35 @@ class _CameraListScreenState extends State<CameraListScreen> {
         final camera = cameras[index];
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(
+              color: camera.isActive ? Colors.green.shade300 : Colors.red.shade300,
+              width: 2,
+            ),
+          ),
           child: ListTile(
+            leading: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: camera.isActive ? Colors.green : Colors.red,
+              ),
+            ),
             title: Text(camera.name),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('${camera.brand} ${camera.model}'),
                 Text('IP: ${camera.ipAddress}'),
+                Text(
+                  camera.isActive ? 'Ativa' : 'Inativa',
+                  style: TextStyle(
+                    color: camera.isActive ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
             trailing: Row(
