@@ -133,28 +133,55 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                       },
                       child: Column(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(28),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  spreadRadius: 1,
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
+                          Hero(
+                            tag: 'app_logo',
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.white,
+                                    Colors.white.withOpacity(0.9),
+                                  ],
                                 ),
-                              ],
-                              border: Border.all(
-                                color: const Color(0xFFff7f11),
-                                width: 3.0,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFffc112).withOpacity(0.3),
+                                    blurRadius: 25,
+                                    spreadRadius: 5,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.white,
+                                    blurRadius: 15,
+                                    spreadRadius: -5,
+                                    offset: const Offset(0, 0),
+                                  ),
+                                ],
                               ),
-                            ),
-                            child: Image.asset(
-                              'assets/images/armadillo_logo.png',
-                              width: 120,
-                              height: 120,
+                              padding: const EdgeInsets.all(20),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Color(0xFFffc112),
+                                      Color(0xFFff7f11),
+                                    ],
+                                  ),
+                                ),
+                                child: Image.asset(
+                                  'assets/images/armadillo_logo.png',
+                                  width: 110,
+                                  height: 110,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 24),
