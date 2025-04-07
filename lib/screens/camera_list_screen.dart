@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/camera.dart';
 import '../services/camera_service.dart';
@@ -14,119 +15,214 @@ class CameraListScreen extends StatefulWidget {
   State<CameraListScreen> createState() => _CameraListScreenState();
 }
 
-class _CameraListScreenState extends State<CameraListScreen> {
+class _CameraListScreenState extends State<CameraListScreen> with SingleTickerProviderStateMixin {
   final CameraService _cameraService = CameraService();
+  late AnimationController _animationController;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _showSearchBar = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Camera> get _filteredCameras {
+    return _cameraService.cameras.where((camera) {
+      final query = _searchQuery.toLowerCase();
+      return camera.name.toLowerCase().contains(query) ||
+          camera.address.toLowerCase().contains(query) ||
+          camera.ipAddress.toLowerCase().contains(query) ||
+          camera.brand.toLowerCase().contains(query) ||
+          camera.model.toLowerCase().contains(query);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+    final customYellow = Theme.of(context).colorScheme.primary;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Image.asset(
-            'assets/images/armadillo_logo.png',
-          ),
-        ),
-        title: const Text('Câmeras Cadastradas'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Sair',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Sair do aplicativo'),
-                  content: const Text('Tem certeza que deseja sair?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (context) => const WelcomeScreen(),
-                          ),
-                          (route) => false,
-                        );
-                      },
-                      child: const Text('Sair'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
       body: Stack(
         children: [
-          Positioned(
-            top: 20,
-            left: 20,
-            right: 20,
-            bottom: 20,
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFe9e9e6), 
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    // ignore: deprecated_member_use
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 10,
-                    spreadRadius: -5,
-                    offset: const Offset(0, 0),
-                  ),
+          // Background
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  customYellow.withOpacity(0.05),
+                  Colors.white,
                 ],
               ),
             ),
           ),
-          _buildCameraList(),
+          
+          // Custom AppBar
           Positioned(
-            bottom: 30,
+            top: 0,
             left: 0,
             right: 0,
-            child: Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('S.O.S'),
-                      content: const Text('Enviando pedido de socorro...'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('OK'),
-                        ),
-                      ],
+            height: statusBarHeight + 60,
+            child: Container(
+              padding: EdgeInsets.only(top: statusBarHeight),
+              decoration: BoxDecoration(
+                color: customYellow,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8), // Reduced horizontal padding
+                child: Row(
+                  mainAxisSize: MainAxisSize.max, // Ensure row takes full width
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset(
+                        'assets/images/armadillo_logo.png',
+                        width: 32, // Slightly smaller logo
+                        height: 32,
+                      ),
                     ),
-                  );
-                },
+                    const SizedBox(width: 8), // Reduced spacing
+                    _showSearchBar
+                        ? Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (value) {
+                                setState(() {
+                                  _searchQuery = value;
+                                });
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Pesquisar...',  // Shorter hint text
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                prefixIcon: const Icon(Icons.search, size: 18), // Smaller icon
+                                suffixIcon: IconButton(
+                                  icon: const Icon(Icons.clear, size: 18), // Smaller icon
+                                  padding: EdgeInsets.zero, // Remove internal padding
+                                  constraints: const BoxConstraints(), // Minimize constraints
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _searchQuery = '';
+                                    });
+                                  },
+                                ),
+                              ),
+                              style: const TextStyle(
+                                fontSize: 14, // Smaller font size
+                              ),
+                              autofocus: true,
+                            ),
+                          )
+                        : Expanded( // Wrap text in Expanded
+                            child: Text(
+                              'Câmeras Cadastradas',
+                              style: const TextStyle(
+                                fontSize: 18, // Slightly smaller font
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis, // Prevent overflow
+                            ),
+                          ),
+                    IconButton(
+                      icon: Icon(_showSearchBar ? Icons.search_off : Icons.search),
+                      padding: const EdgeInsets.all(8), // Smaller padding
+                      constraints: const BoxConstraints(), // Minimize constraints
+                      onPressed: () {
+                        setState(() {
+                          _showSearchBar = !_showSearchBar;
+                          if (!_showSearchBar) {
+                            _searchController.clear();
+                            _searchQuery = '';
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 4), // Add small spacing
+                    IconButton(
+                      icon: const Icon(Icons.logout),
+                      tooltip: 'Sair',
+                      padding: const EdgeInsets.all(8), // Smaller padding
+                      constraints: const BoxConstraints(), // Minimize constraints
+                      onPressed: _showLogoutDialog,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          // Content area
+          Positioned(
+            top: statusBarHeight + 60,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Column(
+              children: [
+                _buildStatusBar(),
+                Expanded(
+                  child: _buildCameraList(),
+                ),
+              ],
+            ),
+          ),
+          
+          // SOS Button with shadow - Updated positioning
+          Positioned(
+            bottom: 16, // Match the standard FAB position
+            left: 20,
+            child: SizedBox(
+              height: 56, // Match FloatingActionButton height
+              width: 120,
+              child: ElevatedButton(
+                onPressed: _showSOSDialog,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFff1b1c),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(28),
                   ),
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
+                  elevation: 6,
+                  shadowColor: const Color(0xFFff1b1c).withOpacity(0.5),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.warning_amber_rounded),
+                    Icon(Icons.warning_amber_rounded, size: 20),
                     SizedBox(width: 8),
-                    Text('S.O.S'),
+                    Text(
+                      'S.O.S',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -134,81 +230,433 @@ class _CameraListScreenState extends State<CameraListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _navigateToCameraForm(context),
-        child: const Icon(Icons.add),
+        label: const Text('Nova Câmera'),
+        icon: const Icon(Icons.add_circle_outline),
+        elevation: 4,
+      ),
+    );
+  }
+
+  Widget _buildStatusBar() {
+    final activeCount = _cameraService.cameras.where((camera) => camera.isActive).length;
+    final inactiveCount = _cameraService.cameras.length - activeCount;
+    final totalCount = _cameraService.cameras.length;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16), // Reduced vertical padding
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Center( // Center everything
+        child: Wrap(
+          alignment: WrapAlignment.center, // Center items
+          spacing: 12, // Reduced spacing between items
+          runSpacing: 8,
+          children: [
+            _buildCountBadge(
+              label: 'Total',
+              count: totalCount,
+              color: Colors.grey[700]!,
+              backgroundColor: Colors.grey[200]!,
+            ),
+            _buildCountBadge(
+              label: 'Ativas',
+              count: activeCount,
+              color: Colors.white,
+              backgroundColor: Colors.green,
+            ),
+            _buildCountBadge(
+              label: 'Inativas',
+              count: inactiveCount,
+              color: Colors.white,
+              backgroundColor: Colors.red,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // New method to create a rounded badge
+  Widget _buildCountBadge({
+    required String label,
+    required int count,
+    required Color color,
+    required Color backgroundColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20), // Rounded borders
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            spreadRadius: 1,
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$label: ',
+            style: TextStyle(
+              fontSize: 12, // Smaller font
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 13, // Slightly larger for the number
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildCameraList() {
-    final cameras = _cameraService.cameras;
+    final cameras = _searchQuery.isEmpty ? _cameraService.cameras : _filteredCameras;
     
-    if (cameras.isEmpty) {
-      return const Center(
-        child: Text('Nenhuma câmera cadastrada'),
+    if (_cameraService.cameras.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.videocam_off,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nenhuma câmera cadastrada',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Adicione sua primeira câmera clicando no botão abaixo',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    if (_searchQuery.isNotEmpty && _filteredCameras.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nenhuma câmera encontrada',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Não foram encontrados resultados para "$_searchQuery"',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
       );
     }
     
     return ListView.builder(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       itemCount: cameras.length,
       itemBuilder: (context, index) {
         final camera = cameras[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side: BorderSide(
-              color: camera.isActive ? Colors.green.shade300 : Colors.red.shade300,
-              width: 2,
-            ),
-          ),
-          child: ListTile(
-            leading: Container(
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: camera.isActive ? Colors.green : Colors.red,
+        return _buildCameraCard(camera);
+      },
+    );
+  }
+
+  Widget _buildCameraCard(Camera camera) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Material(
+        borderRadius: BorderRadius.circular(12),
+        elevation: 2,
+        shadowColor: Colors.black.withOpacity(0.1),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _navigateToCameraDetails(context, camera),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: camera.isActive ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5),
+                width: 1.5,
               ),
             ),
-            title: Text(camera.name),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
               children: [
-                Text(camera.address),
-                Text('IP: ${camera.ipAddress}'),
-                Text(
-                  camera.isActive ? 'Ativa' : 'Inativa',
-                  style: TextStyle(
-                    color: camera.isActive ? Colors.green : Colors.red,
-                    fontWeight: FontWeight.bold,
+                // Status indicator
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  decoration: BoxDecoration(
+                    color: camera.isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(10),
+                      topRight: Radius.circular(10),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        camera.isActive ? Icons.check_circle_outline : Icons.error_outline,
+                        color: camera.isActive ? Colors.green : Colors.red,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        camera.isActive ? 'Ativa' : 'Inativa',
+                        style: TextStyle(
+                          color: camera.isActive ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Camera details
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Camera icon
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.videocam,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      
+                      // Info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              camera.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    camera.address,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                const Icon(Icons.router, size: 14, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'IP: ${camera.ipAddress}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                const Icon(Icons.business, size: 14, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${camera.brand} ${camera.model}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Action buttons
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(10),
+                      bottomRight: Radius.circular(10),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _navigateToCameraDetails(context, camera),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.visibility,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Detalhes',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 20,
+                        color: Colors.grey[300],
+                      ),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _navigateToCameraForm(context, camera: camera),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.edit,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Editar',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 20,
+                        color: Colors.grey[300],
+                      ),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _showDeleteDialog(camera),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 10),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.delete,
+                                  size: 16,
+                                  color: Colors.red,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Excluir',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.visibility),
-                  tooltip: 'Ver detalhes',
-                  onPressed: () => _navigateToCameraDetails(context, camera),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => _navigateToCameraForm(context, camera: camera),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () => _showDeleteDialog(camera),
-                ),
-              ],
-            ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -220,7 +668,7 @@ class _CameraListScreenState extends State<CameraListScreen> {
       ),
     );
 
-    if (result != null) {
+    if (result == true) {
       setState(() {});
     }
   }
@@ -229,20 +677,44 @@ class _CameraListScreenState extends State<CameraListScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Excluir câmera'),
+        title: Row(
+          children: [
+            const Icon(Icons.delete, color: Colors.red),
+            const SizedBox(width: 8),
+            const Text('Excluir câmera'),
+          ],
+        ),
         content: Text('Deseja realmente excluir a câmera ${camera.name}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
           ),
-          TextButton(
+          ElevatedButton.icon(
+            icon: const Icon(Icons.delete, size: 18),
+            label: const Text('Excluir'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () {
               _cameraService.deleteCamera(camera.id);
               Navigator.pop(context);
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Câmera ${camera.name} excluída com sucesso'),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              );
+              
               setState(() {});
             },
-            child: const Text('Excluir'),
           ),
         ],
       ),
@@ -254,6 +726,97 @@ class _CameraListScreenState extends State<CameraListScreen> {
       context,
       CustomPageRoute(
         child: CameraDetailsScreen(camera: camera),
+      ),
+    ).then((_) => setState(() {}));
+  }
+  
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.logout, color: Colors.grey),
+            SizedBox(width: 8),
+            Text('Sair do aplicativo'),
+          ],
+        ),
+        content: const Text('Tem certeza que deseja sair?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text('Sair'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey[800],
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const WelcomeScreen(),
+                ),
+                (route) => false,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _showSOSDialog() {
+    HapticFeedback.heavyImpact();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFff1b1c)),
+            SizedBox(width: 8),
+            Text('S.O.S', style: TextStyle(color: Color(0xFFff1b1c))),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enviando pedido de socorro...'),
+            const SizedBox(height: 16),
+            const LinearProgressIndicator(
+              backgroundColor: Color(0xFFffcccb),
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFff1b1c)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFff1b1c),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Pedido de socorro enviado com sucesso'),
+                  backgroundColor: Color(0xFFff1b1c),
+                  behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            },
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }

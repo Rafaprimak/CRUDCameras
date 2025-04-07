@@ -16,7 +16,7 @@ class CameraService {
 
   List<Camera> get cameras => List.unmodifiable(_cameras);
 
-  Camera addCamera(String name, String brand, String model, String ipAddress, String address) {
+  Camera addCamera(String name, String brand, String model, String ipAddress, String address, {bool isActive = true}) {
     final camera = Camera(
       id: _uuid.v4(),
       name: name,
@@ -24,7 +24,7 @@ class CameraService {
       model: model,
       ipAddress: ipAddress,
       address: address,
-      isActive: true,
+      isActive: isActive,  // Now accepts the parameter value
     );
     _cameras.add(camera);
     return camera;

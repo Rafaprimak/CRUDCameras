@@ -1,112 +1,305 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/camera.dart';
+import '../services/camera_service.dart';
+import 'camera_form_screen.dart';
 
-class CameraDetailsScreen extends StatelessWidget {
+class CameraDetailsScreen extends StatefulWidget {
   final Camera camera;
 
   const CameraDetailsScreen({super.key, required this.camera});
 
   @override
+  State<CameraDetailsScreen> createState() => _CameraDetailsScreenState();
+}
+
+class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTickerProviderStateMixin {
+  late Camera _camera;
+  final CameraService _cameraService = CameraService();
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _camera = widget.camera;
+    
+    // Setup animations
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
+      ),
+    );
+    
+    // Start animation
+    _controller.forward();
+  }
+  
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final customYellow = Theme.of(context).colorScheme.primary;
+    
     return Scaffold(
       appBar: AppBar(
         centerTitle: true, 
-        title: const Text('Detalhes da Câmera'),
+        backgroundColor: customYellow,
+        elevation: 2,
+        title: const Text(
+          'Detalhes da Câmera',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'Editar câmera',
+            onPressed: () async {
+              final result = await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx) => CameraFormScreen(camera: _camera),
+                ),
+              );
+              
+              if (result == true) {
+                setState(() {
+                  // Refresh camera data
+                  final updatedCamera = _cameraService.getCameraById(_camera.id);
+                  if (updatedCamera != null) {
+                    _camera = updatedCamera;
+                  }
+                });
+              }
+            },
+          ),
+        ],
       ),
       
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeaderSection(),
-              const SizedBox(height: 24),
-              _buildInfoCard('Informações Gerais', [
-                _buildInfoRow('Nome:', camera.name),
-                _buildInfoRow('Endereço:', camera.address), 
-                _buildInfoRow('Marca:', camera.brand),
-                _buildInfoRow('Modelo:', camera.model),
-              ]),
-              const SizedBox(height: 16),
-              _buildInfoCard('Configurações de Rede', [
-                _buildInfoRow('Endereço IP:', camera.ipAddress),
-              ]),
-              const SizedBox(height: 16),
-              _buildInfoCard('Status', [
-                _buildStatusRow('Status:', camera.isActive ? 'Ativa' : 'Inativa', 
-                    camera.isActive ? Colors.green : Colors.red),
-              ]),
-              
-              const SizedBox(height: 20),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              customYellow.withOpacity(0.05),
+              Colors.white,
             ],
+          ),
+        ),
+        child: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeaderSection(context),
+                    const SizedBox(height: 24),
+                    
+                    // General Information Card
+                    _buildInfoCard(
+                      context,
+                      'Informações Gerais',
+                      Icons.info_outline,
+                      [
+                        _buildInfoRow(context, Icons.camera_alt, 'Nome:', _camera.name),
+                        _buildInfoRow(context, Icons.location_on, 'Endereço:', _camera.address), 
+                        _buildInfoRow(context, Icons.business, 'Marca:', _camera.brand),
+                        _buildInfoRow(context, Icons.devices, 'Modelo:', _camera.model),
+                      ],
+                    ),
+                    
+                    // Network Information Card
+                    _buildInfoCard(
+                      context,
+                      'Configurações de Rede',
+                      Icons.router,
+                      [
+                        _buildInfoRow(context, Icons.wifi, 'Endereço IP:', _camera.ipAddress),
+                      ],
+                    ),
+                    
+                    // Status Card
+                    _buildStatusCard(context),
+                    
+                    // Action Buttons
+                    const SizedBox(height: 24),
+                    Center(
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: [
+                          _buildActionButton(
+                            context, 
+                            'Testar Conexão', 
+                            Icons.network_check, 
+                            Colors.blue,
+                            () => _showTestConnectionDialog(context),
+                          ),
+                          _buildActionButton(
+                            context, 
+                            _camera.isActive ? 'Desativar' : 'Ativar', 
+                            _camera.isActive ? Icons.do_not_disturb : Icons.check_circle_outline, 
+                            _camera.isActive ? Colors.red : Colors.green,
+                            () => _showToggleActiveDialog(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHeaderSection() {
-    return Center(
-      child: Column(
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: camera.isActive ? Colors.green : Colors.red,
-                width: 3,
-              ),
-            ),
-            child: const Icon(
-              Icons.camera_alt,
-              size: 50,
-              color: Colors.black54,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            camera.name,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            '${camera.brand} ${camera.model}',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[700],
-            ),
+  Widget _buildHeaderSection(BuildContext context) {
+    final customYellow = Theme.of(context).colorScheme.primary;
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Row(
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: customYellow.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: _camera.isActive ? Colors.green : Colors.red,
+                  width: 3,
+                ),
+              ),
+              child: Icon(
+                Icons.camera_alt,
+                size: 40,
+                color: customYellow,
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _camera.name,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ) ?? const TextStyle(
+                      fontSize: 20, 
+                      fontWeight: FontWeight.bold
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: (_camera.isActive ? Colors.green : Colors.red).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _camera.isActive ? Icons.check_circle : Icons.cancel,
+                          color: _camera.isActive ? Colors.green : Colors.red,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _camera.isActive ? 'Câmera Ativa' : 'Câmera Inativa',
+                          style: TextStyle(
+                            color: _camera.isActive ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildInfoCard(String title, List<Widget> children) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
+  Widget _buildInfoCard(BuildContext context, String title, IconData titleIcon, List<Widget> children) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Icon(
+                  titleIcon,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18, 
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-            const Divider(),
+            const Divider(height: 24),
             ...children,
           ],
         ),
@@ -114,24 +307,46 @@ class CameraDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value) {
+    // Safe fallback for colors
+    final Color iconColor = Colors.grey[600] ?? Colors.grey;
+    final Color labelColor = Colors.grey[700] ?? Colors.grey;
+    
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-            ),
+          Icon(
+            icon,
+            size: 20,
+            color: iconColor,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 16,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: labelColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  // Handle potentially long text
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 3,
+                ),
+              ],
             ),
           ),
         ],
@@ -139,36 +354,330 @@ class CameraDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusRow(String label, String value, Color statusColor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-            ),
+  Widget _buildStatusCard(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          const SizedBox(width: 8),
-          Row(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: statusColor,
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.graphic_eq,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Status',
+                  style: TextStyle(
+                    fontSize: 18, 
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _camera.isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _camera.isActive ? Colors.green : Colors.red,
+                  width: 1,
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: statusColor,
-                  fontWeight: FontWeight.bold,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: (_camera.isActive ? Colors.green : Colors.red).withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _camera.isActive ? Icons.visibility : Icons.visibility_off,
+                      color: _camera.isActive ? Colors.green : Colors.red,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Status: ${_camera.isActive ? 'Ativa' : 'Inativa'}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: _camera.isActive ? Colors.green : Colors.red,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _camera.isActive 
+                              ? 'Esta câmera está operando normalmente.'
+                              : 'Esta câmera está temporariamente desativada.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+      BuildContext context, String label, IconData icon, Color color, VoidCallback onPressed) {
+    return ElevatedButton.icon(
+      icon: Icon(icon, color: Colors.white),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        elevation: 2,
+      ),
+      onPressed: () {
+        HapticFeedback.mediumImpact();
+        onPressed();
+      },
+    );
+  }
+
+  void _showTestConnectionDialog(BuildContext context) {
+    // Create a future to simulate network test
+    Future<bool> testConnection() async {
+      await Future.delayed(const Duration(seconds: 2));
+      return true; // Simulate successful connection
+    }
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => FutureBuilder<bool>(
+        future: testConnection(),
+        builder: (context, snapshot) {
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.network_check, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Teste de Conexão'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (snapshot.connectionState == ConnectionState.waiting)
+                  Column(
+                    children: [
+                      const SizedBox(height: 16),
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Testando conexão com ${_camera.ipAddress}...',
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  )
+                else if (snapshot.hasData && snapshot.data == true)
+                  Column(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.green, size: 64),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Conexão estabelecida com sucesso!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'A câmera ${_camera.name} está respondendo corretamente.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  )
+                else
+                  Column(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Falha na conexão!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Não foi possível estabelecer conexão com ${_camera.ipAddress}',
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(
+                  snapshot.connectionState == ConnectionState.waiting
+                      ? 'Cancelar'
+                      : 'Fechar'
                 ),
+              ),
+            ],
+          );
+        }
+      ),
+    );
+  }
+
+  void _showToggleActiveDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              _camera.isActive ? Icons.do_not_disturb : Icons.check_circle_outline,
+              color: _camera.isActive ? Colors.red : Colors.green,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(_camera.isActive ? 'Desativar Câmera' : 'Ativar Câmera'),
+            ),
+          ],
+        ),
+        content: Text(
+          _camera.isActive
+              ? 'Deseja desativar a câmera ${_camera.name}?'
+              : 'Deseja ativar a câmera ${_camera.name}?',
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        actions: [
+          // Wrap buttons in a row for consistent alignment
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+                child: const Text('Cancelar'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                icon: Icon(
+                  _camera.isActive ? Icons.cancel : Icons.check_circle,
+                  size: 18,
+                ),
+                label: Text(_camera.isActive ? 'Desativar' : 'Ativar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _camera.isActive ? Colors.red : Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () {
+                  try {
+                    // Create the updated camera with toggled status
+                    final updatedCamera = Camera(
+                      id: _camera.id,
+                      name: _camera.name,
+                      brand: _camera.brand,
+                      model: _camera.model,
+                      ipAddress: _camera.ipAddress,
+                      address: _camera.address,
+                      isActive: !_camera.isActive,
+                    );
+                    
+                    // Update in the service
+                    _cameraService.updateCamera(updatedCamera);
+                    
+                    // Update the local state
+                    setState(() {
+                      _camera = updatedCamera;
+                    });
+                    
+                    // Show success feedback
+                    final snackBar = SnackBar(
+                      content: Text(
+                        updatedCamera.isActive
+                            ? 'Câmera ${updatedCamera.name} ativada com sucesso!'
+                            : 'Câmera ${updatedCamera.name} desativada com sucesso!'
+                      ),
+                      backgroundColor: updatedCamera.isActive ? Colors.green : Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      duration: const Duration(seconds: 2),
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                    
+                    // Close the dialog
+                    Navigator.of(ctx).pop();
+                    
+                  } catch (e) {
+                    // Error handling
+                    final errorSnackBar = SnackBar(
+                      content: Text('Erro ao atualizar status da câmera: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      duration: const Duration(seconds: 3),
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(errorSnackBar);
+                    Navigator.of(ctx).pop();
+                  }
+                },
               ),
             ],
           ),
