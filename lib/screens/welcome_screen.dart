@@ -22,7 +22,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
   void initState() {
     super.initState();
     
-    // Set system UI overlay style
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -30,7 +29,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
       ),
     );
     
-    // Setup animations
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -57,10 +55,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
       ),
     );
     
-    // Start animation
     _controller.forward();
     
-    // Show button after delay
     Timer(const Duration(milliseconds: 800), () {
       setState(() {
         _showButton = true;
@@ -90,7 +86,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
         ),
         child: Stack(
           children: [
-            // Background design elements
             Positioned(
               top: -50,
               right: -50,
@@ -116,14 +111,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
               ),
             ),
             
-            // Main content
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo and name with animations
                     AnimatedBuilder(
                       animation: _controller,
                       builder: (context, child) {
@@ -196,7 +189,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                       ),
                     ),
                     
-                    // Button with animation
+
                     const SizedBox(height: 50),
                     AnimatedOpacity(
                       opacity: _showButton ? 1.0 : 0.0,
@@ -255,7 +248,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                       ),
                     ),
                     
-                    // Version text at bottom
                     if (_showButton)
                       AnimatedOpacity(
                         opacity: _showButton ? 0.7 : 0.0,

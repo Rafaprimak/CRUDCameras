@@ -88,7 +88,6 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Form Header
                     Container(
                       margin: const EdgeInsets.only(bottom: 24),
                       child: Row(
@@ -138,7 +137,6 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                       ),
                     ),
 
-                    // Basic Information Card
                     _buildSectionCard(
                       title: 'Informações Básicas',
                       titleIcon: Icons.info_outline,
@@ -190,7 +188,6 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                       ],
                     ),
                     
-                    // Network Information Card
                     _buildSectionCard(
                       title: 'Configurações de Rede',
                       titleIcon: Icons.router,
@@ -203,14 +200,12 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Por favor, insira um endereço IP';
                             }
-                            // Optional: Add regex validation for IP format
                             return null;
                           },
                         ),
                       ],
                     ),
                     
-                    // Location Information Card
                     _buildSectionCard(
                       title: 'Localização',
                       titleIcon: Icons.location_on,
@@ -229,7 +224,6 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                       ],
                     ),
                     
-                    // Status Card
                     _buildSectionCard(
                       title: 'Status',
                       titleIcon: Icons.settings,
@@ -279,7 +273,6 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                               setState(() {
                                 _isActive = value;
                               });
-                              // Provide haptic feedback
                               HapticFeedback.lightImpact();
                             },
                           ),
@@ -287,7 +280,6 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                       ],
                     ),
                     
-                    // Action Buttons
                     const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -318,14 +310,13 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                             ),
                           ),
                           onPressed: () {
-                            // Provide haptic feedback
                             HapticFeedback.mediumImpact();
                             _saveCamera();
                           },
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20), // Bottom padding
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -421,7 +412,6 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
         );
         _cameraService.updateCamera(updatedCamera);
         
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Câmera ${updatedCamera.name} atualizada com sucesso'),
@@ -440,10 +430,9 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           _modelController.text,
           _ipAddressController.text,
           _addressController.text,
-          isActive: _isActive,  // Pass the selected status
+          isActive: _isActive,  
         );
         
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Câmera ${camera.name} cadastrada com sucesso'),

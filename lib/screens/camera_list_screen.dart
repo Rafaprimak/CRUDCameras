@@ -57,7 +57,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
     return Scaffold(
       body: Stack(
         children: [
-          // Background
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -71,7 +70,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
             ),
           ),
           
-          // Custom AppBar
           Positioned(
             top: 0,
             left: 0,
@@ -90,19 +88,19 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                 ],
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8), // Reduced horizontal padding
+                padding: const EdgeInsets.symmetric(horizontal: 8), 
                 child: Row(
-                  mainAxisSize: MainAxisSize.max, // Ensure row takes full width
+                  mainAxisSize: MainAxisSize.max, 
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.asset(
                         'assets/images/armadillo_logo.png',
-                        width: 32, // Slightly smaller logo
+                        width: 32,
                         height: 32,
                       ),
                     ),
-                    const SizedBox(width: 8), // Reduced spacing
+                    const SizedBox(width: 8),
                     _showSearchBar
                         ? Expanded(
                             child: TextField(
@@ -113,15 +111,15 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                                 });
                               },
                               decoration: InputDecoration(
-                                hintText: 'Pesquisar...',  // Shorter hint text
+                                hintText: 'Pesquisar...', 
                                 border: InputBorder.none,
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                                prefixIcon: const Icon(Icons.search, size: 18), // Smaller icon
+                                prefixIcon: const Icon(Icons.search, size: 18), 
                                 suffixIcon: IconButton(
-                                  icon: const Icon(Icons.clear, size: 18), // Smaller icon
-                                  padding: EdgeInsets.zero, // Remove internal padding
-                                  constraints: const BoxConstraints(), // Minimize constraints
+                                  icon: const Icon(Icons.clear, size: 18), 
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(), 
                                   onPressed: () {
                                     _searchController.clear();
                                     setState(() {
@@ -131,25 +129,27 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                                 ),
                               ),
                               style: const TextStyle(
-                                fontSize: 14, // Smaller font size
+                                fontSize: 14,  
                               ),
                               autofocus: true,
                             ),
                           )
-                        : Expanded( // Wrap text in Expanded
-                            child: Text(
-                              'Câmeras Cadastradas',
-                              style: const TextStyle(
-                                fontSize: 18, // Slightly smaller font
-                                fontWeight: FontWeight.bold,
+                        : Expanded( 
+                            child: Center(
+                              child: Text(
+                                'Câmeras Cadastradas',
+                                style: const TextStyle(
+                                  fontSize: 18, 
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis, 
                               ),
-                              overflow: TextOverflow.ellipsis, // Prevent overflow
                             ),
                           ),
                     IconButton(
                       icon: Icon(_showSearchBar ? Icons.search_off : Icons.search),
-                      padding: const EdgeInsets.all(8), // Smaller padding
-                      constraints: const BoxConstraints(), // Minimize constraints
+                      padding: const EdgeInsets.all(8), 
+                      constraints: const BoxConstraints(),
                       onPressed: () {
                         setState(() {
                           _showSearchBar = !_showSearchBar;
@@ -160,12 +160,12 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                         });
                       },
                     ),
-                    const SizedBox(width: 4), // Add small spacing
+                    const SizedBox(width: 4), 
                     IconButton(
                       icon: const Icon(Icons.logout),
                       tooltip: 'Sair',
-                      padding: const EdgeInsets.all(8), // Smaller padding
-                      constraints: const BoxConstraints(), // Minimize constraints
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(), 
                       onPressed: _showLogoutDialog,
                     ),
                   ],
@@ -174,7 +174,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
             ),
           ),
           
-          // Content area
+          
           Positioned(
             top: statusBarHeight + 60,
             left: 0,
@@ -190,12 +190,12 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
             ),
           ),
           
-          // SOS Button with shadow - Updated positioning
+
           Positioned(
-            bottom: 16, // Match the standard FAB position
+            bottom: 16, 
             left: 20,
             child: SizedBox(
-              height: 56, // Match FloatingActionButton height
+              height: 56, 
               width: 120,
               child: ElevatedButton(
                 onPressed: _showSOSDialog,
@@ -245,7 +245,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
     final totalCount = _cameraService.cameras.length;
     
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16), // Reduced vertical padding
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),  
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -256,10 +256,10 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
           ),
         ],
       ),
-      child: Center( // Center everything
+      child: Center( 
         child: Wrap(
-          alignment: WrapAlignment.center, // Center items
-          spacing: 12, // Reduced spacing between items
+          alignment: WrapAlignment.center,
+          spacing: 12,
           runSpacing: 8,
           children: [
             _buildCountBadge(
@@ -286,7 +286,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
     );
   }
 
-  // New method to create a rounded badge
+ 
   Widget _buildCountBadge({
     required String label,
     required int count,
@@ -297,7 +297,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(20), // Rounded borders
+        borderRadius: BorderRadius.circular(20), 
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -313,7 +313,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
           Text(
             '$label: ',
             style: TextStyle(
-              fontSize: 12, // Smaller font
+              fontSize: 12, 
               color: color,
               fontWeight: FontWeight.w500,
             ),
@@ -321,7 +321,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
           Text(
             '$count',
             style: TextStyle(
-              fontSize: 13, // Slightly larger for the number
+              fontSize: 13, 
               color: color,
               fontWeight: FontWeight.bold,
             ),
@@ -428,7 +428,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
             ),
             child: Column(
               children: [
-                // Status indicator
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -460,13 +459,11 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                   ),
                 ),
                 
-                // Camera details
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Camera icon
                       Container(
                         width: 50,
                         height: 50,
@@ -482,7 +479,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                       ),
                       const SizedBox(width: 16),
                       
-                      // Info
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,7 +543,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                   ),
                 ),
                 
-                // Action buttons
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.grey[50],

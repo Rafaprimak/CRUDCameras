@@ -24,7 +24,7 @@ class CameraService {
       model: model,
       ipAddress: ipAddress,
       address: address,
-      isActive: isActive,  // Now accepts the parameter value
+      isActive: isActive,
     );
     _cameras.add(camera);
     return camera;

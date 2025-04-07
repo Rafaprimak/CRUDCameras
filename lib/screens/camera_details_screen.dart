@@ -25,7 +25,6 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
     super.initState();
     _camera = widget.camera;
     
-    // Setup animations
     _controller = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -38,7 +37,6 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
       ),
     );
     
-    // Start animation
     _controller.forward();
   }
   
@@ -78,7 +76,6 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
               
               if (result == true) {
                 setState(() {
-                  // Refresh camera data
                   final updatedCamera = _cameraService.getCameraById(_camera.id);
                   if (updatedCamera != null) {
                     _camera = updatedCamera;
@@ -114,7 +111,6 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                     _buildHeaderSection(context),
                     const SizedBox(height: 24),
                     
-                    // General Information Card
                     _buildInfoCard(
                       context,
                       'Informações Gerais',
@@ -127,7 +123,6 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                       ],
                     ),
                     
-                    // Network Information Card
                     _buildInfoCard(
                       context,
                       'Configurações de Rede',
@@ -137,10 +132,8 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                       ],
                     ),
                     
-                    // Status Card
                     _buildStatusCard(context),
                     
-                    // Action Buttons
                     const SizedBox(height: 24),
                     Center(
                       child: Wrap(
@@ -308,7 +301,6 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
   }
 
   Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value) {
-    // Safe fallback for colors
     final Color iconColor = Colors.grey[600] ?? Colors.grey;
     final Color labelColor = Colors.grey[700] ?? Colors.grey;
     
@@ -342,7 +334,6 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
-                  // Handle potentially long text
                   overflow: TextOverflow.ellipsis,
                   maxLines: 3,
                 ),
@@ -470,10 +461,9 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
   }
 
   void _showTestConnectionDialog(BuildContext context) {
-    // Create a future to simulate network test
     Future<bool> testConnection() async {
       await Future.delayed(const Duration(seconds: 2));
-      return true; // Simulate successful connection
+      return true;
     }
     
     showDialog(
@@ -595,7 +585,6 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
           borderRadius: BorderRadius.circular(16),
         ),
         actions: [
-          // Wrap buttons in a row for consistent alignment
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -623,7 +612,6 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                 ),
                 onPressed: () {
                   try {
-                    // Create the updated camera with toggled status
                     final updatedCamera = Camera(
                       id: _camera.id,
                       name: _camera.name,
@@ -634,15 +622,12 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                       isActive: !_camera.isActive,
                     );
                     
-                    // Update in the service
                     _cameraService.updateCamera(updatedCamera);
                     
-                    // Update the local state
                     setState(() {
                       _camera = updatedCamera;
                     });
                     
-                    // Show success feedback
                     final snackBar = SnackBar(
                       content: Text(
                         updatedCamera.isActive
@@ -659,11 +644,9 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                     );
                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
                     
-                    // Close the dialog
                     Navigator.of(ctx).pop();
                     
                   } catch (e) {
-                    // Error handling
                     final errorSnackBar = SnackBar(
                       content: Text('Erro ao atualizar status da câmera: ${e.toString()}'),
                       backgroundColor: Colors.red,
