@@ -1,0 +1,90 @@
+Ideias do Claude 3.7 para o app:
+
+Security & Monitoring Enhancements
+Live View Dashboard
+
+Multi-camera grid view
+Picture-in-picture mode for focused monitoring
+Quick toggle between cameras
+Motion Detection Alerts
+
+Receive notifications when motion is detected
+Save snapshots of detected motion events
+Configurable sensitivity settings
+Enhanced SOS System
+
+Emergency contact management
+Automated SMS fallback if WhatsApp is unavailable
+One-click emergency calls
+Location sharing during emergencies
+Recording Management
+
+Schedule recording times for each camera
+Cloud storage integration for footage
+Video clip export and sharing
+Organization & Management
+Camera Grouping System
+
+Group cameras by location/building/floor
+Create custom groups (e.g., "Exterior", "High Security")
+Batch operations for multiple cameras
+Interactive Map View
+
+Display cameras on a floor plan or map
+Visualize camera coverage areas
+Click cameras on map to access live view
+Maintenance Scheduling
+
+Set maintenance reminders
+Track service history
+Generate maintenance reports
+Access Control
+
+User account system with roles (admin, security, viewer)
+Biometric authentication for app access
+Detailed access logs
+Analytics & Information
+Camera Health Dashboard
+
+Uptime statistics
+Connection quality metrics
+Bandwidth usage monitoring
+Battery status for wireless cameras
+Incident Reporting System
+
+Create incident reports with camera references
+Attach video evidence from specific time periods
+Export reports as PDF
+Activity Timeline
+
+Visual history of camera status changes
+Connection/disconnection events
+User interaction logs
+User Experience
+Dark Mode & Theme Options
+
+Customizable app appearance
+Eye-friendly night mode for security monitoring
+Brand-consistent color schemes
+Widget Support
+
+Home screen widgets for quick camera access
+Status widgets showing camera health
+SOS widget for emergencies
+Voice Commands
+
+Control the app hands-free
+"Show me Camera 1" or "Activate all cameras"
+Integration with Google Assistant/Siri
+Notification Center
+
+Centralized place for all app alerts
+Customizable notification preferences
+Summary of events when opening the app
+Which to Implement First?
+The most impactful features to implement first would be:
+
+Camera Grouping - Immediately improves organization for users with many cameras
+Live View Dashboard - Adds core functionality users would expect
+Dark Mode - Relatively easy to implement with high user satisfaction
+Enhanced SOS System - Builds on your existing SOS feature for better emergency response
