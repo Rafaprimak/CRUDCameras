@@ -80,7 +80,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
             end: Alignment.bottomCenter,
             colors: [
               Colors.white,
-              const Color(0xFFffc112).withOpacity(0.1),
+              const Color(0xFFffc112).withAlpha(26),
             ],
           ),
         ),
@@ -94,7 +94,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                 height: 200,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFffc112).withOpacity(0.1),
+                  color: const Color(0xFFffc112).withAlpha(26),
                 ),
               ),
             ),
@@ -106,7 +106,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                 height: 250,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFffc112).withOpacity(0.15),
+                  color: const Color(0xFFffc112).withAlpha(39),
                 ),
               ),
             ),
@@ -143,12 +143,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                                   end: Alignment.bottomRight,
                                   colors: [
                                     Colors.white,
-                                    Colors.white.withOpacity(0.9),
+                                    Colors.white.withAlpha(230),
                                   ],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFffc112).withOpacity(0.3),
+                                    color: const Color(0xFFffc112).withAlpha(77),
                                     blurRadius: 25,
                                     spreadRadius: 5,
                                     offset: const Offset(0, 5),
@@ -194,7 +194,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                               letterSpacing: 1.5,
                               shadows: [
                                 Shadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withAlpha(26),
                                   offset: const Offset(1, 2),
                                   blurRadius: 3,
                                 ),
@@ -258,7 +258,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                               fontWeight: FontWeight.bold,
                             ),
                             elevation: 4,
-                            shadowColor: const Color(0xFFffc112).withOpacity(0.5),
+                            shadowColor: const Color(0xFFffc112).withAlpha(128),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),

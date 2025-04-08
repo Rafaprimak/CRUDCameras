@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 
 import '../models/camera.dart';
 import '../services/camera_service.dart';
+import '../services/camera_group_service.dart';
 import '../utils/custom_route.dart';
 import 'camera_details_screen.dart';
 import 'camera_form_screen.dart';
+import 'group_list_screen.dart';
 import 'welcome_screen.dart';
 
 class CameraListScreen extends StatefulWidget {
@@ -17,9 +19,11 @@ class CameraListScreen extends StatefulWidget {
 
 class _CameraListScreenState extends State<CameraListScreen> with SingleTickerProviderStateMixin {
   final CameraService _cameraService = CameraService();
+  final CameraGroupService _groupService = CameraGroupService();
   late AnimationController _animationController;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _selectedGroupId = '';
   bool _showSearchBar = false;
 
   @override
@@ -39,7 +43,15 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
   }
 
   List<Camera> get _filteredCameras {
-    return _cameraService.cameras.where((camera) {
+    List<Camera> cameras = _selectedGroupId.isEmpty 
+        ? _cameraService.cameras 
+        : _cameraService.getCamerasByGroup(_selectedGroupId);
+    
+    if (_searchQuery.isEmpty) {
+      return cameras;
+    }
+
+    return cameras.where((camera) {
       final query = _searchQuery.toLowerCase();
       return camera.name.toLowerCase().contains(query) ||
           camera.address.toLowerCase().contains(query) ||
@@ -47,6 +59,15 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
           camera.brand.toLowerCase().contains(query) ||
           camera.model.toLowerCase().contains(query);
     }).toList();
+  }
+
+  String _getSelectedGroupName() {
+    if (_selectedGroupId.isEmpty) {
+      return 'Todas as Câmeras';
+    }
+    
+    final group = _groupService.getGroupById(_selectedGroupId);
+    return group?.name ?? 'Todas as Câmeras';
   }
 
   @override
@@ -63,7 +84,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  customYellow.withOpacity(0.05),
+                  customYellow.withAlpha(13),
                   Colors.white,
                 ],
               ),
@@ -81,7 +102,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                 color: customYellow,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withAlpha(26),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -174,9 +195,51 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
             ),
           ),
           
-          
           Positioned(
             top: statusBarHeight + 60,
+            left: 0,
+            right: 0,
+            child: Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: InkWell(
+                onTap: _navigateToGroupSelector,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.folder,
+                        size: 18,
+                        color: customYellow,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _getSelectedGroupName(),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_drop_down,
+                        size: 24,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          Positioned(
+            top: statusBarHeight + 110,
             left: 0,
             right: 0,
             bottom: 0,
@@ -207,7 +270,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                     borderRadius: BorderRadius.circular(28),
                   ),
                   elevation: 6,
-                  shadowColor: const Color(0xFFff1b1c).withOpacity(0.5),
+                  shadowColor: const Color(0xFFff1b1c).withAlpha(128),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
@@ -250,7 +313,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 2,
             offset: const Offset(0, 1),
           ),
@@ -300,7 +363,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
         borderRadius: BorderRadius.circular(20), 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             spreadRadius: 1,
             blurRadius: 2,
             offset: const Offset(0, 1),
@@ -332,7 +395,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
   }
 
   Widget _buildCameraList() {
-    final cameras = _searchQuery.isEmpty ? _cameraService.cameras : _filteredCameras;
+    final cameras = _filteredCameras;
     
     if (_cameraService.cameras.isEmpty) {
       return Center(
@@ -366,7 +429,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
       );
     }
     
-    if (_searchQuery.isNotEmpty && _filteredCameras.isEmpty) {
+    if (_searchQuery.isNotEmpty && cameras.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -409,12 +472,16 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
   }
 
   Widget _buildCameraCard(Camera camera) {
+    final group = _groupService.getGroupById(camera.groupId);
+    final groupName = group?.name ?? 'Sem grupo';
+    final groupColor = group != null ? Color(group.colorValue) : Colors.grey;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Material(
         borderRadius: BorderRadius.circular(12),
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: Colors.black.withAlpha(26),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () => _navigateToCameraDetails(context, camera),
@@ -422,7 +489,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: camera.isActive ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5),
+                color: camera.isActive ? Colors.green.withAlpha(128) : Colors.red.withAlpha(128),
                 width: 1.5,
               ),
             ),
@@ -432,7 +499,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   decoration: BoxDecoration(
-                    color: camera.isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                    color: camera.isActive ? Colors.green.withAlpha(26) : Colors.red.withAlpha(26),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(10),
                       topRight: Radius.circular(10),
@@ -468,7 +535,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          color: Theme.of(context).colorScheme.primary.withAlpha(26),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -535,6 +602,37 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                                   ),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: groupColor.withAlpha(26),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: groupColor.withAlpha(128),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.folder,
+                                    size: 12,
+                                    color: groupColor,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    groupName,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: groupColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -723,6 +821,19 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
         child: CameraDetailsScreen(camera: camera),
       ),
     ).then((_) => setState(() {}));
+  }
+  
+  void _navigateToGroupSelector() async {
+    final selectedGroupId = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const GroupListScreen()),
+    );
+    
+    if (selectedGroupId != null) {
+      setState(() {
+        _selectedGroupId = selectedGroupId;
+      });
+    }
   }
   
   void _showLogoutDialog() {

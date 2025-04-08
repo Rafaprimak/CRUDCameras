@@ -86,7 +86,7 @@ class MyApp extends StatelessWidget {
         cardTheme: CardTheme(
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          shadowColor: Colors.black.withOpacity(0.1),
+          shadowColor: Colors.black.withAlpha(26),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(

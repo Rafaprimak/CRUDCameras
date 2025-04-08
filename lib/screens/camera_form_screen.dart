@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../models/camera.dart';
 import '../services/camera_service.dart';
+import '../services/camera_group_service.dart';
 
 class CameraFormScreen extends StatefulWidget {
   final Camera? camera;
@@ -16,6 +17,7 @@ class CameraFormScreen extends StatefulWidget {
 class _CameraFormScreenState extends State<CameraFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final CameraService _cameraService = CameraService();
+  final CameraGroupService _groupService = CameraGroupService();
   
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
@@ -23,6 +25,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
   final _modelController = TextEditingController();
   final _ipAddressController = TextEditingController();
   bool _isActive = true;
+  String _selectedGroupId = '';
 
   bool get _isEditing => widget.camera != null;
 
@@ -36,6 +39,9 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
       _ipAddressController.text = widget.camera!.ipAddress;
       _addressController.text = widget.camera!.address;
       _isActive = widget.camera!.isActive;
+      _selectedGroupId = widget.camera!.groupId;
+    } else {
+      _selectedGroupId = _groupService.defaultGroupId;
     }
   }
 
@@ -73,7 +79,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              customYellow.withOpacity(0.05),
+              customYellow.withAlpha(13),
               Colors.white,
             ],
           ),
@@ -95,7 +101,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: customYellow.withOpacity(0.1),
+                              color: customYellow.withAlpha(26),
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: customYellow,
@@ -225,12 +231,20 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                     ),
                     
                     _buildSectionCard(
+                      title: 'Grupo',
+                      titleIcon: Icons.folder,
+                      children: [
+                        _buildGroupSelector(),
+                      ],
+                    ),
+                    
+                    _buildSectionCard(
                       title: 'Status',
                       titleIcon: Icons.settings,
                       children: [
                         Container(
                           decoration: BoxDecoration(
-                            color: (_isActive ? Colors.green : Colors.red).withOpacity(0.1),
+                            color: (_isActive ? Colors.green : Colors.red).withAlpha(51),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: _isActive ? Colors.green : Colors.red,
@@ -254,13 +268,13 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                             ),
                             value: _isActive,
                             activeColor: Colors.green,
-                            activeTrackColor: Colors.green.withOpacity(0.5),
+                            activeTrackColor: Colors.green.withAlpha(128),
                             inactiveThumbColor: Colors.red,
-                            inactiveTrackColor: Colors.red.withOpacity(0.5),
+                            inactiveTrackColor: Colors.red.withAlpha(128),
                             secondary: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: (_isActive ? Colors.green : Colors.red).withOpacity(0.2),
+                                color: (_isActive ? Colors.green : Colors.red).withAlpha(51),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -339,7 +353,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -398,6 +412,87 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
     );
   }
 
+  Widget _buildGroupSelector() {
+    final groups = _groupService.groups;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Grupo',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[400]!),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedGroupId,
+              isExpanded: true,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              borderRadius: BorderRadius.circular(8),
+              items: groups.map((group) {
+                return DropdownMenuItem<String>(
+                  value: group.id,
+                  child: Row(
+                    children: [
+                      Icon(
+                        IconData(
+                          _getIconCode(group.iconName),
+                          fontFamily: 'MaterialIcons',
+                        ),
+                        color: Color(group.colorValue),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(group.name),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedGroupId = value;
+                  });
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  int _getIconCode(String iconName) {
+    final Map<String, int> iconMap = {
+      'folder': Icons.folder.codePoint,
+      'home': Icons.home.codePoint,
+      'business': Icons.business.codePoint,
+      'videocam': Icons.videocam.codePoint,
+      'security': Icons.security.codePoint,
+      'visibility': Icons.visibility.codePoint,
+      'location_on': Icons.location_on.codePoint,
+      'shield': Icons.shield.codePoint,
+      'warning': Icons.warning.codePoint,
+      'camera_alt': Icons.camera_alt.codePoint,
+      'meeting_room': Icons.meeting_room.codePoint,
+      'store': Icons.store.codePoint,
+      'warehouse': Icons.warehouse.codePoint,
+      'garage': Icons.garage.codePoint,
+      'terrain': Icons.terrain.codePoint,
+      'other_houses': Icons.other_houses.codePoint,
+    };
+    
+    return iconMap[iconName] ?? Icons.folder.codePoint;
+  }
+
   void _saveCamera() {
     if (_formKey.currentState!.validate()) {
       if (_isEditing) {
@@ -409,6 +504,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           ipAddress: _ipAddressController.text,
           address: _addressController.text,
           isActive: _isActive,
+          groupId: _selectedGroupId,
         );
         _cameraService.updateCamera(updatedCamera);
         
@@ -430,7 +526,8 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           _modelController.text,
           _ipAddressController.text,
           _addressController.text,
-          isActive: _isActive,  
+          isActive: _isActive,
+          groupId: _selectedGroupId,
         );
         
         ScaffoldMessenger.of(context).showSnackBar(

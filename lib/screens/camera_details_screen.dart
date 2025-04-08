@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../models/camera.dart';
 import '../services/camera_service.dart';
+import '../services/camera_group_service.dart';
 import 'camera_form_screen.dart';
 
 class CameraDetailsScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class CameraDetailsScreen extends StatefulWidget {
 class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTickerProviderStateMixin {
   late Camera _camera;
   final CameraService _cameraService = CameraService();
+  final CameraGroupService _groupService = CameraGroupService();
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
 
@@ -93,7 +95,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              customYellow.withOpacity(0.05),
+              customYellow.withAlpha(13), 
               Colors.white,
             ],
           ),
@@ -120,6 +122,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                         _buildInfoRow(context, Icons.location_on, 'Endereço:', _camera.address), 
                         _buildInfoRow(context, Icons.business, 'Marca:', _camera.brand),
                         _buildInfoRow(context, Icons.devices, 'Modelo:', _camera.model),
+                        _buildGroupInfoRow(context),
                       ],
                     ),
                     
@@ -178,7 +181,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13), // 0.05 * 255 ≈ 13
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -192,7 +195,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: customYellow.withOpacity(0.1),
+                color: customYellow.withAlpha(26), // 0.1 * 255 ≈ 26
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: _camera.isActive ? Colors.green : Colors.red,
@@ -225,7 +228,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: (_camera.isActive ? Colors.green : Colors.red).withOpacity(0.1),
+                      color: (_camera.isActive ? Colors.green : Colors.red).withAlpha(26), // 0.1 * 255 ≈ 26
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -264,7 +267,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13), // 0.05 * 255 ≈ 13
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -345,6 +348,102 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
     );
   }
 
+  Widget _buildGroupInfoRow(BuildContext context) {
+    final group = _groupService.getGroupById(_camera.groupId);
+    final groupName = group?.name ?? 'Sem grupo';
+    final groupColor = group != null ? Color(group.colorValue) : Colors.grey;
+    final iconCode = group != null ? 
+        _getIconCode(group.iconName) : 
+        Icons.folder.codePoint;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.folder,
+            size: 20,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Grupo:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: groupColor.withAlpha(26), // 0.1 * 255 ≈ 26
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: groupColor.withAlpha(128), // 0.5 * 255 ≈ 128
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        IconData(
+                          iconCode,
+                          fontFamily: 'MaterialIcons',
+                        ),
+                        size: 16,
+                        color: groupColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        groupName,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: groupColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _getIconCode(String iconName) {
+    final Map<String, int> iconMap = {
+      'folder': Icons.folder.codePoint,
+      'home': Icons.home.codePoint,
+      'business': Icons.business.codePoint,
+      'videocam': Icons.videocam.codePoint,
+      'security': Icons.security.codePoint,
+      'visibility': Icons.visibility.codePoint,
+      'location_on': Icons.location_on.codePoint,
+      'shield': Icons.shield.codePoint,
+      'warning': Icons.warning.codePoint,
+      'camera_alt': Icons.camera_alt.codePoint,
+      'meeting_room': Icons.meeting_room.codePoint,
+      'store': Icons.store.codePoint,
+      'warehouse': Icons.warehouse.codePoint,
+      'garage': Icons.garage.codePoint,
+      'terrain': Icons.terrain.codePoint,
+      'other_houses': Icons.other_houses.codePoint,
+    };
+    
+    return iconMap[iconName] ?? Icons.folder.codePoint;
+  }
+
   Widget _buildStatusCard(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -353,7 +452,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13), // 0.05 * 255 ≈ 13
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -385,7 +484,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _camera.isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                color: _camera.isActive ? Colors.green.withAlpha(26) : Colors.red.withAlpha(26), // 0.1 * 255 ≈ 26
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: _camera.isActive ? Colors.green : Colors.red,
@@ -397,7 +496,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: (_camera.isActive ? Colors.green : Colors.red).withOpacity(0.2),
+                      color: (_camera.isActive ? Colors.green : Colors.red).withAlpha(51), // 0.2 * 255 ≈ 51
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -620,6 +719,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                       ipAddress: _camera.ipAddress,
                       address: _camera.address,
                       isActive: !_camera.isActive,
+                      groupId: _camera.groupId,
                     );
                     
                     _cameraService.updateCamera(updatedCamera);
