@@ -67,7 +67,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
     }
     
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 72),
       itemCount: _groupService.groups.length,
       itemBuilder: (context, index) {
         final group = _groupService.groups[index];

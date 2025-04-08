@@ -462,7 +462,7 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
     }
     
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80), 
       itemCount: cameras.length,
       itemBuilder: (context, index) {
         final camera = cameras[index];
