@@ -16,23 +16,110 @@
   -->
   <base href="$FLUTTER_BASE_HREF">
 
+  <!-- Add these meta tags to fix color rendering -->
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#ffc112">
 
   <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="crud">
+  <meta name="apple-mobile-web-app-title" content="CRUD Cameras">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>crud</title>
+  <title>CRUD Cameras</title>
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Add this style block to fix color tinting issues -->
+  <style>
+    body {
+      background-color: #ffffff !important;
+      color-scheme: light;
+    }
+    
+    /* Fix blue tint overlay */
+    flt-glass-pane {
+      background-color: transparent !important;
+    }
+    
+    .flutter-loader, #splash {
+      background-color: #ffffff !important;
+    }
+    
+    /* Microsoft Edge specific fixes */
+    @supports (-ms-ime-align:auto) {
+      body, flt-glass-pane {
+        background-color: transparent !important;
+      }
+      
+      * {
+        color-scheme: light only;
+      }
+    }
+  </style>
+  
+  <script>
+    // The value below is injected by flutter build, do not touch.
+    var serviceWorkerVersion = null;
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
+  
+  <!-- Add custom script to fix Flutter web color handling -->
+  <script>
+    window.addEventListener('load', function() {
+      // Remove any browser color overlays
+      document.body.style.backgroundColor = 'transparent';
+      
+      // Force color space correction
+      var meta = document.createElement('meta');
+      meta.name = 'force-color-profile';
+      meta.content = 'srgb';
+      document.getElementsByTagName('head')[0].appendChild(meta);
+    });
+  </script>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    window.addEventListener('load', function(ev) {
+      // Check if running in Edge
+      const isEdge = navigator.userAgent.indexOf("Edg") != -1;
+      
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine({
+            // Use renderer optimized for Edge
+            renderer: "canvaskit",
+            useColorEmulation: false
+          }).then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
 </body>
 </html>
+
+<script type="application/json">
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "CRUDCameras (Edge)",
+      "request": "launch",
+      "type": "dart",
+      "args": ["-d", "edge"]
+    }
+  ]
+}
+</script>
