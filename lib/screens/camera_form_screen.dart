@@ -243,52 +243,84 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                       titleIcon: Icons.settings,
                       children: [
                         Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
                           decoration: BoxDecoration(
-                            color: (_isActive ? Colors.green : Colors.red).withAlpha(51),
+                            color: (_isActive ? Colors.green : Colors.red).withAlpha(40),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: _isActive ? Colors.green : Colors.red,
-                              width: 1,
+                              width: 1.5,
                             ),
                           ),
-                          child: SwitchListTile(
-                            title: const Text(
-                              'Câmera Ativa',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _isActive = !_isActive;
+                                });
+                                HapticFeedback.selectionClick();
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: (_isActive ? Colors.green : Colors.red).withAlpha(60),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        _isActive ? Icons.visibility : Icons.visibility_off,
+                                        color: _isActive ? Colors.green : Colors.red,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Câmera Ativa',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _isActive ? 'A câmera está ativa' : 'A câmera está inativa',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: _isActive ? Colors.green.shade700 : Colors.red.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Switch(
+                                      value: _isActive,
+                                      activeColor: Colors.green,
+                                      activeTrackColor: Colors.green.withAlpha(128),
+                                      inactiveThumbColor: Colors.red,
+                                      inactiveTrackColor: Colors.red.withAlpha(128),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _isActive = value;
+                                        });
+                                        HapticFeedback.selectionClick();
+                                      },
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            subtitle: Text(
-                              _isActive ? 'A câmera está ativa' : 'A câmera está inativa',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: _isActive ? Colors.green.shade700 : Colors.red.shade700,
-                              ),
-                            ),
-                            value: _isActive,
-                            activeColor: Colors.green,
-                            activeTrackColor: Colors.green.withAlpha(128),
-                            inactiveThumbColor: Colors.red,
-                            inactiveTrackColor: Colors.red.withAlpha(128),
-                            secondary: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: (_isActive ? Colors.green : Colors.red).withAlpha(51),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                _isActive ? Icons.visibility : Icons.visibility_off,
-                                color: _isActive ? Colors.green : Colors.red,
-                                size: 24,
-                              ),
-                            ),
-                            onChanged: (value) {
-                              setState(() {
-                                _isActive = value;
-                              });
-                              HapticFeedback.lightImpact();
-                            },
                           ),
                         ),
                       ],
@@ -322,10 +354,14 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            minimumSize: const Size(150, 48), // Fixed size for better rendering
                           ),
                           onPressed: () {
                             HapticFeedback.mediumImpact();
-                            _saveCamera();
+                            // Trigger a rebuild before saving (helps with rendering)
+                            setState(() {});
+                            // Wait a tiny moment for the UI to update
+                            Future.microtask(() => _saveCamera());
                           },
                         ),
                       ],
@@ -396,19 +432,36 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
     String? Function(String?)? validator,
     TextInputType keyboardType = TextInputType.text,
   }) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: labelText,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: labelText,
+          prefixIcon: Icon(icon, size: 20),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey[400]!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey[400]!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          isDense: true,
+          filled: true,
+          fillColor: Colors.white,
         ),
+        keyboardType: keyboardType,
+        validator: validator,
+        style: const TextStyle(fontSize: 16, height: 1.1),
+        onTapOutside: (_) => FocusScope.of(context).unfocus(),
       ),
-      keyboardType: keyboardType,
-      validator: validator,
-      style: const TextStyle(fontSize: 16),
-      onTapOutside: (_) => FocusScope.of(context).unfocus(),
     );
   }
 
@@ -426,43 +479,62 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          height: 56,
           decoration: BoxDecoration(
+            color: Colors.white,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey[400]!),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedGroupId,
-              isExpanded: true,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              borderRadius: BorderRadius.circular(8),
-              items: groups.map((group) {
-                return DropdownMenuItem<String>(
-                  value: group.id,
-                  child: Row(
-                    children: [
-                      Icon(
-                        IconData(
-                          _getIconCode(group.iconName),
-                          fontFamily: 'MaterialIcons',
+          child: Material(
+            color: Colors.transparent,
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedGroupId,
+                isExpanded: true,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                borderRadius: BorderRadius.circular(8),
+                itemHeight: 56,
+                items: groups.map((group) {
+                  return DropdownMenuItem<String>(
+                    value: group.id,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 32,
+                          height: 32,
+                          child: Icon(
+                            IconData(
+                              _getIconCode(group.iconName),
+                              fontFamily: 'MaterialIcons',
+                            ),
+                            color: Color(group.colorValue),
+                            size: 20,
+                          ),
                         ),
-                        color: Color(group.colorValue),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(group.name),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedGroupId = value;
-                  });
-                }
-              },
+                        const SizedBox(width: 8),
+                        Text(
+                          group.name, 
+                          style: const TextStyle(
+                            fontSize: 16,
+                            height: 1.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedGroupId = value;
+                    });
+                  }
+                },
+              ),
             ),
           ),
         ),
@@ -493,47 +565,104 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
     return iconMap[iconName] ?? Icons.folder.codePoint;
   }
 
-  void _saveCamera() {
+  Future<void> _saveCamera() async {
     if (_formKey.currentState!.validate()) {
-      if (_isEditing) {
-        final updatedCamera = Camera(
-          id: widget.camera!.id,
-          name: _nameController.text,
-          brand: _brandController.text,
-          model: _modelController.text,
-          ipAddress: _ipAddressController.text,
-          address: _addressController.text,
-          isActive: _isActive,
-          groupId: _selectedGroupId,
+      try {
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          },
         );
-        _cameraService.updateCamera(updatedCamera);
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Câmera ${updatedCamera.name} atualizada com sucesso'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+        if (_isEditing) {
+          final updatedCamera = Camera(
+            id: widget.camera!.id,
+            name: _nameController.text,
+            brand: _brandController.text,
+            model: _modelController.text,
+            ipAddress: _ipAddressController.text,
+            address: _addressController.text,
+            isActive: _isActive,
+            groupId: _selectedGroupId,
+          );
+          
+          // Wait for the update to complete
+          await _cameraService.updateCamera(updatedCamera);
+          
+          // Close loading dialog
+          if (mounted) Navigator.of(context).pop();
+          
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Câmera ${updatedCamera.name} atualizada com sucesso'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              duration: const Duration(seconds: 2),
             ),
-          ),
-        );
-      } else {
-        final camera = _cameraService.addCamera(
-          _nameController.text,
-          _brandController.text,
-          _modelController.text,
-          _ipAddressController.text,
-          _addressController.text,
-          isActive: _isActive,
-          groupId: _selectedGroupId,
-        );
+          );
+        } else {
+          final cameraName = _nameController.text;
+          final newCamera = Camera(
+            id: '', 
+            name: cameraName,
+            brand: _brandController.text,
+            model: _modelController.text,
+            ipAddress: _ipAddressController.text,
+            address: _addressController.text,
+            isActive: _isActive,
+            groupId: _selectedGroupId,
+          );
+
+          // Wait for the camera to be added
+          await _cameraService.addCamera(newCamera);
+          
+          // Close loading dialog
+          if (mounted) Navigator.of(context).pop();
+          
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Câmera $cameraName cadastrada com sucesso'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
         
+        // Ensure we have the latest data
+        await _cameraService.getCameras();
+        
+        // Wait a short moment for the UI to update
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Return to the list screen with result true to trigger refresh
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      } catch (error) {
+        // Close loading dialog if it's showing
+        if (mounted) Navigator.of(context).pop();
+        
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Câmera ${camera.name} cadastrada com sucesso'),
-            backgroundColor: Colors.green,
+            content: Text('Erro ao salvar câmera: ${error.toString()}'),
+            backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
             shape: RoundedRectangleBorder(
@@ -542,7 +671,6 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           ),
         );
       }
-      Navigator.pop(context, true);
     }
   }
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "411425726198",
+    "project_id": "armadillo-45bef",
+    "storage_bucket": "armadillo-45bef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:411425726198:android:86c0b8b1ac773f985dd6d7",
+        "android_client_info": {
+          "package_name": "armadillo.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbbFoTN8BABYh4g1EHufAyEgnX-4f-6VY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

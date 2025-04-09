@@ -1,15 +1,41 @@
 import 'package:flutter/material.dart';
-
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';  // Import firebase options
+import 'services/camera_group_service.dart';
 import 'screens/welcome_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    // Initialize Firebase with options
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase initialized successfully');
+  } catch (e) {
+    print('Failed to initialize Firebase: $e');
+  }
+  
+  await _initializeServices();
   runApp(const MyApp());
+}
+
+Future<void> _initializeServices() async {
+  try {
+    final groupService = CameraGroupService();
+    await groupService.initialize();
+  } catch (e) {
+    print('Error initializing services: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+  
   @override
   Widget build(BuildContext context) {
+    // Keep your existing yellow but ensure consistent rendering
     final Color customYellow = const Color(0xFFffc112);
     
     return MaterialApp(
@@ -17,89 +43,25 @@ class MyApp extends StatelessWidget {
       title: 'Camera Management',
       theme: ThemeData(
         useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: customYellow,
+          primary: customYellow, // Explicitly set primary to avoid tint shifts
+          brightness: Brightness.light,
+        ),
         fontFamily: 'Karla',
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(fontFamily: 'Karla'),
-          displayMedium: TextStyle(fontFamily: 'Karla'),
-          displaySmall: TextStyle(fontFamily: 'Karla'),
-          headlineLarge: TextStyle(fontFamily: 'Karla'),
-          headlineMedium: TextStyle(fontFamily: 'Karla'),
-          headlineSmall: TextStyle(fontFamily: 'Karla'),
-          titleLarge: TextStyle(fontFamily: 'Karla'),
-          titleMedium: TextStyle(fontFamily: 'Karla'),
-          titleSmall: TextStyle(fontFamily: 'Karla'),
-          bodyLarge: TextStyle(fontFamily: 'Karla'),
-          bodyMedium: TextStyle(fontFamily: 'Karla'),
-          bodySmall: TextStyle(fontFamily: 'Karla'),
-          labelLarge: TextStyle(fontFamily: 'Karla'),
-          labelMedium: TextStyle(fontFamily: 'Karla'),
-          labelSmall: TextStyle(fontFamily: 'Karla'),
-        ),
-        colorScheme: ColorScheme.light(
-          primary: customYellow,
-          onPrimary: Colors.black,
-          secondary: Colors.white,
-          onSecondary: Colors.black,
-          tertiary: Colors.black,
-          onTertiary: Colors.white,
-          surface: Colors.white,
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: customYellow,
-          foregroundColor: Colors.black,
-        ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: customYellow,
-          foregroundColor: Colors.black,
-        ),
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: ZoomPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
-            TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
-          },
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.grey[50],
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey[300]!),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey[300]!),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: customYellow, width: 2),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.red, width: 1),
-          ),
-          prefixIconColor: Colors.grey[600],
-        ),
-        cardTheme: CardTheme(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          shadowColor: Colors.black.withAlpha(26),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        // Standard dialog theme
+        dialogBackgroundColor: Colors.white,
+        dialogTheme: const DialogTheme(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white, // Important for Material 3
+          elevation: 24,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
         ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        ),
+        // Alert dialog theme - using the correct property name
+        // Note: DialogTheme controls both regular dialogs and alert dialogs
+        // If you need specific alert dialog styling, use the proper widget properties when creating alerts
       ),
       home: const WelcomeScreen(),
     );

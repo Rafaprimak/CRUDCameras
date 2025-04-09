@@ -1,4 +1,4 @@
-import 'package:uuid/uuid.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/camera.dart';
 import 'camera_group_service.dart';
@@ -12,12 +12,64 @@ class CameraService {
   
   CameraService._internal();
   
-  final List<Camera> _cameras = [];
-  final Uuid _uuid = const Uuid();
+  final CollectionReference _camerasCollection = 
+      FirebaseFirestore.instance.collection('cameras');
+  
+  // Cache cameras locally
+  List<Camera> _cameras = [];
+  // Removed unused _uuid field
   final CameraGroupService _groupService = CameraGroupService();
 
-  List<Camera> get cameras => List.unmodifiable(_cameras);
+  // Get all cameras (with local caching)
+  Future<List<Camera>> getCameras() async {
+    try {
+      final snapshot = await _camerasCollection.get();
+      final newCameras = snapshot.docs
+          .map((doc) => Camera.fromFirestore(doc))
+          .toList();
+          
+      // Only update if there are actual changes to avoid triggering state updates
+      if (_cameras.length != newCameras.length || 
+          !_compareCameraLists(_cameras, newCameras)) {
+        _cameras = newCameras;
+      }
+      
+      return _cameras;
+    } catch (e) {
+      print('Error getting cameras: $e');
+      return _cameras;
+    }
+  }
+  
+  // Helper method to compare camera lists for equality
+  bool _compareCameraLists(List<Camera> list1, List<Camera> list2) {
+    if (list1.length != list2.length) return false;
+    
+    // Create maps of ID to last update for faster comparison
+    final map1 = {for (var c in list1) c.id: c};
+    final map2 = {for (var c in list2) c.id: c};
+    
+    // Check if all IDs match
+    if (!map1.keys.every((id) => map2.containsKey(id))) return false;
+    
+    // Check if any camera details differ
+    for (final id in map1.keys) {
+      final cam1 = map1[id]!;
+      final cam2 = map2[id]!;
+      if (cam1.name != cam2.name ||
+          cam1.isActive != cam2.isActive ||
+          cam1.groupId != cam2.groupId) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  // Get cameras (cached)
+  List<Camera> get cameras => _cameras;
 
+  // Get cameras by group
   List<Camera> getCamerasByGroup(String groupId) {
     if (groupId.isEmpty || groupId == _groupService.defaultGroupId) {
       return cameras;
@@ -25,26 +77,24 @@ class CameraService {
     return _cameras.where((camera) => camera.groupId == groupId).toList();
   }
 
-  Camera addCamera(String name, String brand, String model, String ipAddress, String address, {bool isActive = true, String groupId = ''}) {
-    final camera = Camera(
-      id: _uuid.v4(),
-      name: name,
-      brand: brand,
-      model: model,
-      ipAddress: ipAddress,
-      address: address,
-      isActive: isActive,
-      groupId: groupId.isEmpty ? _groupService.defaultGroupId : groupId,
-    );
-    _cameras.add(camera);
-    return camera;
+  // Add a new camera
+  Future<void> addCamera(Camera camera) async {
+    await _camerasCollection.add(camera.toFirestore());
+    await getCameras(); // Refresh cache
   }
 
-  void updateCamera(Camera camera) {
+  // Improve the updateCamera method to ensure proper caching
+  Future<void> updateCamera(Camera camera) async {
+    await _camerasCollection.doc(camera.id).update(camera.toFirestore());
+    
+    // Update the cached camera immediately
     final index = _cameras.indexWhere((c) => c.id == camera.id);
-    if (index != -1) {
+    if (index >= 0) {
       _cameras[index] = camera;
     }
+    
+    // Also refresh from Firestore to ensure consistency
+    await getCameras();
   }
 
   void updateCameraGroup(String cameraId, String groupId) {
@@ -64,15 +114,27 @@ class CameraService {
     }
   }
 
-  void deleteCamera(String id) {
+  // Delete a camera
+  Future<void> deleteCamera(String id) async {
+    await _camerasCollection.doc(id).delete();
     _cameras.removeWhere((camera) => camera.id == id);
   }
 
+  // Get a camera by ID
   Camera? getCameraById(String id) {
     try {
       return _cameras.firstWhere((camera) => camera.id == id);
     } catch (_) {
       return null;
     }
+  }
+
+  // Stream cameras for real-time updates
+  Stream<List<Camera>> streamCameras() {
+    return _camerasCollection.snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Camera.fromFirestore(doc))
+          .toList();
+    });
   }
 }

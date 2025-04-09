@@ -63,7 +63,10 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            // Always return true to refresh the camera list when going back
+            Navigator.of(context).pop(true);
+          },
         ),
         actions: [
           IconButton(
@@ -77,10 +80,17 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
               );
               
               if (result == true) {
+                // Force a reload of data from Firestore
+                await _cameraService.getCameras();
+                await _groupService.getGroups();
+                
+                // Get the freshly updated camera with the same ID
+                final updatedCamera = _cameraService.getCameraById(_camera.id);
+                
+                // Update the local camera state
                 setState(() {
-                  final updatedCamera = _cameraService.getCameraById(_camera.id);
                   if (updatedCamera != null) {
-                    _camera = updatedCamera;
+                    _camera = updatedCamera; // Update the current camera being displayed
                   }
                 });
               }
@@ -709,63 +719,77 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: () {
-                  try {
-                    final updatedCamera = Camera(
-                      id: _camera.id,
-                      name: _camera.name,
-                      brand: _camera.brand,
-                      model: _camera.model,
-                      ipAddress: _camera.ipAddress,
-                      address: _camera.address,
-                      isActive: !_camera.isActive,
-                      groupId: _camera.groupId,
-                    );
-                    
-                    _cameraService.updateCamera(updatedCamera);
-                    
-                    setState(() {
-                      _camera = updatedCamera;
-                    });
-                    
-                    final snackBar = SnackBar(
-                      content: Text(
-                        updatedCamera.isActive
-                            ? 'Câmera ${updatedCamera.name} ativada com sucesso!'
-                            : 'Câmera ${updatedCamera.name} desativada com sucesso!'
-                      ),
-                      backgroundColor: updatedCamera.isActive ? Colors.green : Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                      margin: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      duration: const Duration(seconds: 2),
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                    
-                    Navigator.of(ctx).pop();
-                    
-                  } catch (e) {
-                    final errorSnackBar = SnackBar(
-                      content: Text('Erro ao atualizar status da câmera: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                      margin: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      duration: const Duration(seconds: 3),
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(errorSnackBar);
-                    Navigator.of(ctx).pop();
-                  }
-                },
+                onPressed: () => _toggleCameraStatus(),
               ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  // Replace the _toggleCameraStatus method with this improved version:
+  void _toggleCameraStatus() async {
+    try {
+      // Create updated camera with toggled status
+      final updatedCamera = Camera(
+        id: widget.camera.id,
+        name: widget.camera.name,
+        brand: widget.camera.brand,
+        model: widget.camera.model,
+        ipAddress: widget.camera.ipAddress,
+        address: widget.camera.address,
+        isActive: !widget.camera.isActive, // Toggle the status
+        groupId: widget.camera.groupId,
+      );
+      
+      // Update the camera in Firestore
+      await _cameraService.updateCamera(updatedCamera);
+      
+      // First close the dialog
+      Navigator.of(context).pop();
+      
+      // Update the local camera state to reflect changes immediately
+      setState(() {
+        _camera = updatedCamera;
+      });
+      
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Status da câmera ${updatedCamera.name} atualizado com sucesso'),
+            backgroundColor: updatedCamera.isActive ? Colors.green : Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+      
+      // Make sure we return true to the camera list screen when we go back
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pop(true);
+      });
+    } catch (e) {
+      if (mounted) {
+        // Close the dialog first
+        Navigator.of(context).pop();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao atualizar status: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    }
   }
 }

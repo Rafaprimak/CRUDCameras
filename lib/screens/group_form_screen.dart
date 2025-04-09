@@ -211,7 +211,7 @@ class _GroupFormScreenState extends State<GroupFormScreen> {
                           ),
                           onPressed: () {
                             HapticFeedback.mediumImpact();
-                            _saveGroup();
+                            _saveGroup();  // This will now call the async function properly
                           },
                         ),
                       ],
@@ -448,42 +448,70 @@ class _GroupFormScreenState extends State<GroupFormScreen> {
     );
   }
 
-  void _saveGroup() {
+  Future<void> _saveGroup() async {
     if (_formKey.currentState!.validate()) {
-      if (_isEditing) {
-        final updatedGroup = CameraGroup(
-          id: widget.group!.id,
-          name: _nameController.text,
-          description: _descriptionController.text,
-          iconName: _selectedIcon,
-          colorValue: _selectedColor,
-        );
-        
-        _groupService.updateGroup(updatedGroup);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Grupo ${updatedGroup.name} atualizado com sucesso'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+      try {
+        if (_isEditing) {
+          final updatedGroup = CameraGroup(
+            id: widget.group!.id,
+            name: _nameController.text,
+            description: _descriptionController.text,
+            iconName: _selectedIcon,
+            colorValue: _selectedColor,
+          );
+          
+          await _groupService.updateGroup(updatedGroup);
+          
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Grupo ${updatedGroup.name} atualizado com sucesso'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              duration: const Duration(seconds: 2),
             ),
-          ),
-        );
-      } else {
-        final group = _groupService.addGroup(
-          _nameController.text,
-          description: _descriptionController.text,
-          iconName: _selectedIcon,
-          colorValue: _selectedColor,
-        );
+          );
+        } else {
+          final newGroup = CameraGroup(
+            id: '', // ID will be set by the service
+            name: _nameController.text,
+            description: _descriptionController.text,
+            iconName: _selectedIcon,
+            colorValue: _selectedColor,
+          );
+          
+          await _groupService.addGroup(newGroup);
+          
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Grupo ${newGroup.name} criado com sucesso'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
         
+        // Wait for the SnackBar to be visible before navigating
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        if (!mounted) return;
+        Navigator.of(context).pop(true);
+      } catch (error) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Grupo ${group.name} criado com sucesso'),
-            backgroundColor: Colors.green,
+            content: Text('Erro ao salvar grupo: ${error.toString()}'),
+            backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
             shape: RoundedRectangleBorder(
@@ -492,8 +520,6 @@ class _GroupFormScreenState extends State<GroupFormScreen> {
           ),
         );
       }
-      
-      Navigator.of(context).pop(true);
     }
   }
 }

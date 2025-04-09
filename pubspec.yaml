@@ -30,7 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.2
+  # Remove firebase_auth for now
+  firebase_core: ^2.14.0  # Specific version for compatibility
+  cloud_firestore: ^4.8.2  # Specific version for compatibility
   uuid: ^3.0.7
 
 dev_dependencies:

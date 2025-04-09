@@ -63,6 +63,111 @@
     }
   </style>
   
+  <!-- Add to the <head> section -->
+  <style>
+    /* Force correct color rendering */
+    body {
+      color-scheme: light only;
+    }
+    
+    /* Fix color tinting on web platform */
+    flt-glass-pane {
+      filter: none !important;
+    }
+    
+  </style>
+  
+  <!-- Add this in the <head> section -->
+  <style>
+    /* Optimize animations for web */
+    canvas {
+      image-rendering: optimizeSpeed;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: optimize-contrast;
+    }
+    
+    /* Force hardware acceleration */
+    body {
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      perspective: 1000px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Fix animation stuttering */
+    flt-glass-pane * {
+      will-change: transform;
+    }
+  </style>
+
+  <!-- Add this to your existing styles -->
+  <style>
+    /* Fix for Edge browser text fields */
+    @supports (-ms-ime-align:auto) {
+      /* Force text fields to have white background and black text */
+      input, textarea {
+        background-color: white !important;
+        color: black !important;
+      }
+      
+      /* Fix for Canvas rendering in Edge */
+      canvas {
+        opacity: 0.9999;
+      }
+    }
+  </style>
+
+  <!-- Replace the Edge-specific input field fixes with this: -->
+  <style>
+    /* Edge-specific input field fixes */
+    @supports (-ms-ime-align:auto) {
+      /* Fix vertical alignment of text field */
+      flt-text-editing-host {
+        background-color: white !important;
+        color: black !important;
+        caret-color: #ffc112 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        min-height: 40px !important;
+      }
+      
+      /* Fix search field container */
+      .clip-rrect {
+        display: flex !important;
+        align-items: center !important;
+      }
+      
+      /* Make sure text input is vertically centered */
+      input {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        vertical-align: middle !important;
+      }
+      
+      /* Make sure rounded containers render properly */
+      .clip-rrect * {
+        border-radius: 8px !important;
+      }
+      
+      /* Force animation effects */
+      flt-scene-host * {
+        transition-duration: 0.2s !important;
+        transition-property: opacity, transform !important;
+      }
+      
+      /* Ensure search icons align properly */
+      .material-icons {
+        vertical-align: middle !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+      }
+    }
+  </style>
+
   <script>
     // The value below is injected by flutter build, do not touch.
     var serviceWorkerVersion = null;
@@ -97,14 +202,30 @@
         },
         onEntrypointLoaded: function(engineInitializer) {
           engineInitializer.initializeEngine({
-            // Use renderer optimized for Edge
             renderer: "canvaskit",
-            useColorEmulation: false
+            useColorEmulation: false,
+            // Add these options
+            canvasKitBaseUrl: "/canvaskit/",
+            // Force hardware acceleration
+            canvasKitForceCpuOnly: false,
           }).then(function(appRunner) {
             appRunner.runApp();
           });
         }
       });
+    });
+  </script>
+
+  <!-- Add this script right before </body> -->
+  <script>
+    // Fix animations in Edge browser
+    document.addEventListener('DOMContentLoaded', function() {
+      // Force repaint to fix animation glitches
+      setTimeout(function() {
+        document.body.style.display = 'none';
+        document.body.offsetHeight; // Trigger reflow
+        document.body.style.display = '';
+      }, 100);
     });
   </script>
 </body>
