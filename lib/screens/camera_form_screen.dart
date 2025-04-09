@@ -354,13 +354,11 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            minimumSize: const Size(150, 48), // Fixed size for better rendering
+                            minimumSize: const Size(150, 48), 
                           ),
                           onPressed: () {
                             HapticFeedback.mediumImpact();
-                            // Trigger a rebuild before saving (helps with rendering)
                             setState(() {});
-                            // Wait a tiny moment for the UI to update
                             Future.microtask(() => _saveCamera());
                           },
                         ),
@@ -568,7 +566,6 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
   Future<void> _saveCamera() async {
     if (_formKey.currentState!.validate()) {
       try {
-        // Show loading indicator
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -591,10 +588,8 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
             groupId: _selectedGroupId,
           );
           
-          // Wait for the update to complete
           await _cameraService.updateCamera(updatedCamera);
           
-          // Close loading dialog
           if (mounted) Navigator.of(context).pop();
           
           if (!mounted) return;
@@ -623,10 +618,8 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
             groupId: _selectedGroupId,
           );
 
-          // Wait for the camera to be added
           await _cameraService.addCamera(newCamera);
           
-          // Close loading dialog
           if (mounted) Navigator.of(context).pop();
           
           if (!mounted) return;
@@ -644,18 +637,14 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           );
         }
         
-        // Ensure we have the latest data
         await _cameraService.getCameras();
         
-        // Wait a short moment for the UI to update
         await Future.delayed(const Duration(milliseconds: 300));
         
-        // Return to the list screen with result true to trigger refresh
         if (mounted) {
           Navigator.pop(context, true);
         }
       } catch (error) {
-        // Close loading dialog if it's showing
         if (mounted) Navigator.of(context).pop();
         
         if (!mounted) return;

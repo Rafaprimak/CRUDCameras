@@ -34,16 +34,12 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    
-    // Add this line - important for keyboard to appear reliably
-    _searchController.addListener(() {
+        _searchController.addListener(() {
       if (_showSearchBar && _searchController.text.isNotEmpty) {
         setState(() {});
       }
     });
-    
-    // Load data from Firestore
-    _loadData();
+        _loadData();
   }
 
   Future<void> _loadData() async {
@@ -65,22 +61,17 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
   }
 
   List<Camera> get _filteredCameras {
-    // Ensure we have the latest cached data
     if (_cachedCameras.isEmpty || _cachedCameras.length != _cameraService.cameras.length) {
       _cachedCameras = List.from(_cameraService.cameras);
     }
     
-    // Apply group filter
     List<Camera> cameras;
     if (_selectedGroupId.isEmpty || _groupService.isDefaultGroup(_selectedGroupId)) {
-      // Show all cameras for the default group or when no group is selected
       cameras = _cachedCameras;
     } else {
-      // Filter cameras by selected group for non-default groups
       cameras = _cachedCameras.where((c) => c.groupId == _selectedGroupId).toList();
     }
     
-    // Apply search filter if needed
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
       return cameras.where((camera) {
@@ -158,7 +149,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                       ),
                       const SizedBox(width: 8),
                       
-                      // Title shown when search bar is closed
                       if (!_showSearchBar)
                         Expanded(
                           child: Center(
@@ -173,21 +163,20 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                           ),
                         ),
                       
-                      // Animated search bar with improved right-to-left animation
                       if (_showSearchBar)
                         Expanded(
                           child: TweenAnimationBuilder<double>(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOutCubic,
                             tween: Tween<double>(
-                              begin: 1.0, // Start from right side (outside view)
-                              end: 0.0,   // End at normal position
+                              begin: 1.0, 
+                              end: 0.0,   
                             ),
                             builder: (context, value, child) {
                               return Transform.translate(
-                                offset: Offset(value * 100, 0), // Slide horizontally
+                                offset: Offset(value * 100, 0), 
                                 child: Opacity(
-                                  opacity: 1.0 - value,  // Fade in as it slides
+                                  opacity: 1.0 - value,  
                                   child: child,
                                 ),
                               );
@@ -246,7 +235,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                           ),
                         ),
                       
-                      // SEARCH BUTTON - ALWAYS VISIBLE
                       IconButton(
                         icon: _showSearchBar 
                             ? const Icon(Icons.search_off)
@@ -254,22 +242,19 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                         splashRadius: 24,
                         padding: const EdgeInsets.all(8),
                         onPressed: () {
-                          HapticFeedback.lightImpact(); // Add haptic feedback
+                          HapticFeedback.lightImpact(); 
                           
                           if (!_showSearchBar) {
-                            // Opening search bar - do this in a single setState
                             setState(() {
                               _showSearchBar = true;
                             });
                             
-                            // Force focus after animation completes
                             Future.delayed(const Duration(milliseconds: 350), () {
                               if (mounted) {
                                 FocusScope.of(context).requestFocus(FocusNode());
                               }
                             });
                           } else {
-                            // Closing search bar - do everything in a single setState
                             _searchController.clear();
                             setState(() {
                               _showSearchBar = false;
@@ -280,7 +265,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
                         },
                       ),
                       
-                      // LOGOUT BUTTON - ONLY VISIBLE WHEN SEARCH BAR IS CLOSED
                       if (!_showSearchBar)
                         IconButton(
                           icon: const Icon(Icons.logout),
@@ -497,7 +481,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
 
   Widget _buildCameraList() {
     return RepaintBoundary(
-      // This key ensures the widget itself doesn't rebuild unnecessarily
       key: ValueKey('camera_list_container'),
       child: RefreshIndicator(
         color: const Color(0xFFffc112),
@@ -505,14 +488,10 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
         strokeWidth: 2.5,
         displacement: 40,
         onRefresh: () async {
-          // Reload cameras and groups data
           await _cameraService.getCameras();
           await _groupService.getGroups();
-          // Update cached cameras
           _cachedCameras = List.from(_cameraService.cameras);
-          // Update UI if mounted
           if (mounted) setState(() {});
-          // Return a completed future
           return Future.value();
         },
         child: StreamBuilder<List<Camera>>(
@@ -523,12 +502,10 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
               return const Center(child: CircularProgressIndicator());
             }
             
-            // Use cached data if stream has error
+
             if (snapshot.hasError) {
               print('Error loading cameras: ${snapshot.error}');
-              // Fall back to cached data instead of showing error
               if (_cachedCameras.isNotEmpty) {
-                // Continue with cached data instead of showing error
               } else {
                 return Center(
                   child: Text('Erro ao carregar câmeras: ${snapshot.error}'),
@@ -536,7 +513,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
               }
             }
             
-            // Get filtered cameras once to avoid multiple calculations
             final cameras = _filteredCameras;
             
             if (_cameraService.cameras.isEmpty && _cachedCameras.isEmpty) {
@@ -547,7 +523,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
               return _buildEmptyListWithRefresh(isSearchResult: true);
             }
             
-            // Use the ListView with stable keys to prevent flickering
             return ListView.builder(
               key: ValueKey(_cacheKey),
               physics: const AlwaysScrollableScrollPhysics(
@@ -557,13 +532,12 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
               itemCount: cameras.length,
               itemBuilder: (context, index) {
                 final camera = cameras[index];
-                // Use a unique key for each camera card to preserve state
                 return RepaintBoundary(
                   key: ValueKey('camera_${camera.id}'),
                   child: _buildCameraCard(camera),
                 );
               },
-              cacheExtent: 500, // Cache more items to reduce rebuilds during scroll
+              cacheExtent: 500,
             );
           },
         ),
@@ -913,12 +887,9 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
     );
 
     if (result == true) {
-      // Force a reload of data from Firestore
       await _cameraService.getCameras();
       await _groupService.getGroups();
-      // Update cached cameras
       _cachedCameras = List.from(_cameraService.cameras);
-      // Refresh UI
       setState(() {});
     }
   }
@@ -972,7 +943,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
   }
 
   void _navigateToCameraDetails(BuildContext context, Camera camera) async {
-    // Wait for a result from the details screen
     final result = await Navigator.push(
       context,
       CustomPageRoute(
@@ -980,14 +950,10 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
       ),
     );
 
-    // Check if changes were made (result == true)
     if (result == true) {
-      // Force a reload of data from Firestore
       await _cameraService.getCameras();
       await _groupService.getGroups();
-      // Update cached cameras
       _cachedCameras = List.from(_cameraService.cameras);
-      // Refresh UI
       setState(() {});
     }
   }
@@ -1001,7 +967,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
     if (result != null) {
       setState(() {
         _selectedGroupId = result.toString();
-        // Force refresh cameras when group changes
         _cachedCameras = List.from(_cameraService.cameras);
       });
     }
@@ -1048,7 +1013,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
   void _showSOSDialog() {
     HapticFeedback.heavyImpact();
     
-    // Pre-build dialog content to prevent flickering
     final dialogContent = Column(
       mainAxisSize: MainAxisSize.min,
       children: const [
@@ -1086,7 +1050,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
               onPressed: () {
                 Navigator.pop(context);
                 
-                // Show snackbar without triggering a setState
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Pedido de socorro enviado com sucesso'),
@@ -1104,7 +1067,6 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
     );
   }
 
-  // Add a cache key generator to improve cache stability 
   String get _cacheKey => '${_searchQuery}_${_selectedGroupId}_${_cameraService.cameras.length}';
 
 }

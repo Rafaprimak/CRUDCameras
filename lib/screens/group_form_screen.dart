@@ -211,7 +211,7 @@ class _GroupFormScreenState extends State<GroupFormScreen> {
                           ),
                           onPressed: () {
                             HapticFeedback.mediumImpact();
-                            _saveGroup();  // This will now call the async function properly
+                            _saveGroup();
                           },
                         ),
                       ],
@@ -477,7 +477,7 @@ class _GroupFormScreenState extends State<GroupFormScreen> {
           );
         } else {
           final newGroup = CameraGroup(
-            id: '', // ID will be set by the service
+            id: '',
             name: _nameController.text,
             description: _descriptionController.text,
             iconName: _selectedIcon,
@@ -501,7 +501,6 @@ class _GroupFormScreenState extends State<GroupFormScreen> {
           );
         }
         
-        // Wait for the SnackBar to be visible before navigating
         await Future.delayed(const Duration(milliseconds: 500));
         
         if (!mounted) return;

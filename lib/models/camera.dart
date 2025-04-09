@@ -21,7 +21,7 @@ class Camera {
     required this.groupId,
   });
 
-  // From Firestore document
+
   factory Camera.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Camera(
@@ -36,7 +36,7 @@ class Camera {
     );
   }
 
-  // To Firestore document
+
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,

@@ -34,6 +34,7 @@ dependencies:
   firebase_core: ^2.14.0  # Specific version for compatibility
   cloud_firestore: ^4.8.2  # Specific version for compatibility
   uuid: ^3.0.7
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

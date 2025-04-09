@@ -64,7 +64,6 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Always return true to refresh the camera list when going back
             Navigator.of(context).pop(true);
           },
         ),
@@ -80,17 +79,14 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
               );
               
               if (result == true) {
-                // Force a reload of data from Firestore
                 await _cameraService.getCameras();
                 await _groupService.getGroups();
                 
-                // Get the freshly updated camera with the same ID
                 final updatedCamera = _cameraService.getCameraById(_camera.id);
                 
-                // Update the local camera state
                 setState(() {
                   if (updatedCamera != null) {
-                    _camera = updatedCamera; // Update the current camera being displayed
+                    _camera = updatedCamera;
                   }
                 });
               }
@@ -191,7 +187,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(13), // 0.05 * 255 ≈ 13
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -205,7 +201,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: customYellow.withAlpha(26), // 0.1 * 255 ≈ 26
+                color: customYellow.withAlpha(26),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: _camera.isActive ? Colors.green : Colors.red,
@@ -238,7 +234,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: (_camera.isActive ? Colors.green : Colors.red).withAlpha(26), // 0.1 * 255 ≈ 26
+                      color: (_camera.isActive ? Colors.green : Colors.red).withAlpha(26),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -277,7 +273,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(13), // 0.05 * 255 ≈ 13
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -393,10 +389,10 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: groupColor.withAlpha(26), // 0.1 * 255 ≈ 26
+                    color: groupColor.withAlpha(26),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: groupColor.withAlpha(128), // 0.5 * 255 ≈ 128
+                      color: groupColor.withAlpha(128),
                       width: 1,
                     ),
                   ),
@@ -462,7 +458,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(13), // 0.05 * 255 ≈ 13
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -494,7 +490,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _camera.isActive ? Colors.green.withAlpha(26) : Colors.red.withAlpha(26), // 0.1 * 255 ≈ 26
+                color: _camera.isActive ? Colors.green.withAlpha(26) : Colors.red.withAlpha(26),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: _camera.isActive ? Colors.green : Colors.red,
@@ -506,7 +502,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: (_camera.isActive ? Colors.green : Colors.red).withAlpha(51), // 0.2 * 255 ≈ 51
+                      color: (_camera.isActive ? Colors.green : Colors.red).withAlpha(51),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -728,10 +724,8 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
     );
   }
 
-  // Replace the _toggleCameraStatus method with this improved version:
   void _toggleCameraStatus() async {
     try {
-      // Create updated camera with toggled status
       final updatedCamera = Camera(
         id: widget.camera.id,
         name: widget.camera.name,
@@ -739,22 +733,18 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
         model: widget.camera.model,
         ipAddress: widget.camera.ipAddress,
         address: widget.camera.address,
-        isActive: !widget.camera.isActive, // Toggle the status
+        isActive: !widget.camera.isActive,
         groupId: widget.camera.groupId,
       );
       
-      // Update the camera in Firestore
       await _cameraService.updateCamera(updatedCamera);
       
-      // First close the dialog
       Navigator.of(context).pop();
       
-      // Update the local camera state to reflect changes immediately
       setState(() {
         _camera = updatedCamera;
       });
       
-      // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -769,13 +759,12 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
         );
       }
       
-      // Make sure we return true to the camera list screen when we go back
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pop(true);
       });
     } catch (e) {
       if (mounted) {
-        // Close the dialog first
+
         Navigator.of(context).pop();
         
         ScaffoldMessenger.of(context).showSnackBar(

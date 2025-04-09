@@ -19,22 +19,19 @@ class CameraGroupService {
   
   List<CameraGroup> get groups => List.unmodifiable(_groups);
 
-  // Initialize the service and ensure the default group exists
   Future<void> initialize() async {
     if (_initialized) return;
     
     try {
       await getGroups();
       
-      // Check if default group exists
       final defaultGroupExists = _groups.any((group) => 
           group.name == 'Todas as Câmeras');
       
-      // Add default group if it doesn't exist
       if (!defaultGroupExists) {
-        final String newId = _uuid.v4(); // Generate valid UUID
+        final String newId = _uuid.v4(); 
         final defaultGroup = CameraGroup(
-          id: newId, // Use the generated ID instead of empty string
+          id: newId, 
           name: 'Todas as Câmeras',
           description: 'Grupo padrão para todas as câmeras',
           iconName: 'videocam',
@@ -57,7 +54,6 @@ class CameraGroupService {
     }
   }
 
-  // Fix getGroups method to correctly cache and handle groups
   Future<List<CameraGroup>> getGroups() async {
     try {
       final snapshot = await _groupsCollection.get();
@@ -65,7 +61,6 @@ class CameraGroupService {
           .map((doc) => CameraGroup.fromFirestore(doc))
           .toList();
       
-      // Sort groups by name for consistent display
       _groups.sort((a, b) => a.name.compareTo(b.name));
       
       return _groups;
@@ -77,12 +72,9 @@ class CameraGroupService {
   
   String get defaultGroupId => _groups.isNotEmpty ? _groups.first.id : '';
 
-  // Method for adding a new group
   Future<void> addGroup(CameraGroup group) async {
-    // Generate a new ID if it's empty
     final String docId = group.id.isEmpty ? _uuid.v4() : group.id;
     
-    // Create a new group with the generated ID
     final newGroup = CameraGroup(
       id: docId,
       name: group.name,
@@ -91,10 +83,8 @@ class CameraGroupService {
       colorValue: group.colorValue,
     );
     
-    // Save to Firestore
     await _groupsCollection.doc(docId).set(newGroup.toFirestore());
     
-    // Add to local cache
     _groups.add(newGroup);
   }
 
@@ -108,7 +98,6 @@ class CameraGroupService {
     _groups.removeWhere((group) => group.id == id);
   }
 
-  // Add a method to check if a group is the default "all cameras" group
   bool isDefaultGroup(String groupId) {
     if (groupId.isEmpty) return true;
     
@@ -120,10 +109,8 @@ class CameraGroupService {
     }
   }
 
-  // Fix getGroupById for better null handling
   CameraGroup? getGroupById(String groupId) {
     if (groupId.isEmpty) {
-      // Return the default group if no ID is provided
       return _groups.firstWhere(
         (group) => group.name == 'Todas as Câmeras',
         orElse: () => _groups.first,
