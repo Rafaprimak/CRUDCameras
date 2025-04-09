@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CameraGroup {
@@ -7,6 +6,7 @@ class CameraGroup {
   final String description;
   final String iconName;
   final int colorValue;
+  final String userId; // Add this field
 
   CameraGroup({
     required this.id,
@@ -14,6 +14,7 @@ class CameraGroup {
     required this.description,
     required this.iconName,
     required this.colorValue,
+    required this.userId, // Add this parameter
   });
 
   factory CameraGroup.fromFirestore(DocumentSnapshot doc) {
@@ -22,8 +23,9 @@ class CameraGroup {
       id: doc.id,
       name: data['name'] ?? '',
       description: data['description'] ?? '',
-      iconName: data['iconName'] ?? '',
-      colorValue: data['colorValue'] ?? 0,
+      iconName: data['iconName'] ?? 'folder',
+      colorValue: data['colorValue'] ?? 0xFF9E9E9E,
+      userId: data['userId'] ?? '', // Extract userId
     );
   }
 
@@ -33,6 +35,7 @@ class CameraGroup {
       'description': description,
       'iconName': iconName,
       'colorValue': colorValue,
+      'userId': userId, // Include userId
     };
   }
 }

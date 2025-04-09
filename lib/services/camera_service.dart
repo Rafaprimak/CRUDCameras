@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/camera.dart';
 import 'camera_group_service.dart';
+import '../services/auth_service.dart';
 
 class CameraService {
   static final CameraService _instance = CameraService._internal();
@@ -17,10 +18,22 @@ class CameraService {
   
   List<Camera> _cameras = [];
   final CameraGroupService _groupService = CameraGroupService();
+  final AuthService _authService = AuthService();
 
   Future<List<Camera>> getCameras() async {
     try {
-      final snapshot = await _camerasCollection.get();
+      final userId = _authService.userId;
+      if (userId.isEmpty) {
+        // No user logged in, return empty list
+        _cameras = [];
+        return _cameras;
+      }
+      
+      // Filter cameras by userId
+      final snapshot = await _camerasCollection
+          .where('userId', isEqualTo: userId)
+          .get();
+      
       final newCameras = snapshot.docs
           .map((doc) => Camera.fromFirestore(doc))
           .toList();
@@ -68,8 +81,21 @@ class CameraService {
   }
 
   Future<void> addCamera(Camera camera) async {
-    await _camerasCollection.add(camera.toFirestore());
-    await getCameras(); 
+    // Make sure camera includes current user ID
+    final cameraWithUserId = Camera(
+      id: camera.id,
+      name: camera.name,
+      brand: camera.brand,
+      model: camera.model,
+      ipAddress: camera.ipAddress,
+      address: camera.address,
+      isActive: camera.isActive,
+      groupId: camera.groupId,
+      userId: _authService.userId,
+    );
+    
+    await _camerasCollection.add(cameraWithUserId.toFirestore());
+    await getCameras();
   }
 
   Future<void> updateCamera(Camera camera) async {
@@ -95,6 +121,7 @@ class CameraService {
         address: camera.address,
         isActive: camera.isActive,
         groupId: groupId,
+        userId: camera.userId,
       );
       updateCamera(updatedCamera);
     }
@@ -114,7 +141,16 @@ class CameraService {
   }
 
   Stream<List<Camera>> streamCameras() {
-    return _camerasCollection.snapshots().map((snapshot) {
+    final userId = _authService.userId;
+    if (userId.isEmpty) {
+      // Return empty stream if no user is logged in
+      return Stream.value([]);
+    }
+    
+    return _camerasCollection
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs
           .map((doc) => Camera.fromFirestore(doc))
           .toList();

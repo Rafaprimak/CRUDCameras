@@ -2,13 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/camera.dart';
+import '../models/camera_group.dart';
 import '../services/camera_service.dart';
 import '../services/camera_group_service.dart';
+import '../services/auth_service.dart';
 
 class CameraFormScreen extends StatefulWidget {
   final Camera? camera;
+  final List<CameraGroup>? preloadedGroups;
 
-  const CameraFormScreen({super.key, this.camera});
+  const CameraFormScreen({
+    super.key, 
+    this.camera, 
+    this.preloadedGroups,
+  });
 
   @override
   State<CameraFormScreen> createState() => _CameraFormScreenState();
@@ -18,6 +25,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final CameraService _cameraService = CameraService();
   final CameraGroupService _groupService = CameraGroupService();
+  final AuthService _authService = AuthService();
   
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
@@ -26,12 +34,19 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
   final _ipAddressController = TextEditingController();
   bool _isActive = true;
   String _selectedGroupId = '';
+  bool _isInitialized = false;
 
   bool get _isEditing => widget.camera != null;
 
   @override
   void initState() {
     super.initState();
+    
+    // Defer initialization to after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
+    
     if (_isEditing) {
       _nameController.text = widget.camera!.name;
       _brandController.text = widget.camera!.brand;
@@ -40,8 +55,65 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
       _addressController.text = widget.camera!.address;
       _isActive = widget.camera!.isActive;
       _selectedGroupId = widget.camera!.groupId;
-    } else {
-      _selectedGroupId = _groupService.defaultGroupId;
+    }
+  }
+
+  Future<void> _initializeData() async {
+    try {
+      if (widget.preloadedGroups != null && widget.preloadedGroups!.isNotEmpty) {
+        // Use preloaded data
+        _groupService.setGroups(widget.preloadedGroups!);
+        
+        if (!_isEditing) {
+          // Ensure we have a valid default group
+          final defaultId = _groupService.defaultGroupId;
+          
+          setState(() {
+            _selectedGroupId = defaultId.isNotEmpty ? defaultId : 
+                (widget.preloadedGroups!.isNotEmpty ? widget.preloadedGroups!.first.id : '');
+            _isInitialized = true;
+          });
+        } else {
+          // For editing, check if the selected group ID exists
+          if (_selectedGroupId.isEmpty || !widget.preloadedGroups!.any((g) => g.id == _selectedGroupId)) {
+            _selectedGroupId = widget.preloadedGroups!.isNotEmpty ? widget.preloadedGroups!.first.id : '';
+          }
+          
+          setState(() {
+            _isInitialized = true;
+          });
+        }
+      } else {
+        // Fallback to loading data
+        await _groupService.ensureDefaultGroupExists();
+        await _groupService.getGroups();
+        
+        final groups = _groupService.groups;
+        
+        if (!_isEditing) {
+          setState(() {
+            _selectedGroupId = _groupService.defaultGroupId.isNotEmpty ? 
+                _groupService.defaultGroupId : 
+                (groups.isNotEmpty ? groups.first.id : '');
+            _isInitialized = true;
+          });
+        } else {
+          // Verify selected group exists
+          if (_selectedGroupId.isEmpty || !groups.any((g) => g.id == _selectedGroupId)) {
+            _selectedGroupId = groups.isNotEmpty ? groups.first.id : '';
+          }
+          
+          setState(() {
+            _isInitialized = true;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error initializing data: $e');
+      // Even on error, mark as initialized and use empty state handling
+      setState(() {
+        _isInitialized = true;
+      });
     }
   }
 
@@ -73,7 +145,9 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Container(
+      body: !_isInitialized 
+        ? Center(child: CircularProgressIndicator(color: customYellow))
+        : Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -466,6 +540,33 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
   Widget _buildGroupSelector() {
     final groups = _groupService.groups;
     
+    // Safety check: If no groups are available, show a placeholder
+    if (groups.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[400]!),
+        ),
+        child: Row(
+          children: const [
+            Icon(Icons.info_outline, color: Colors.grey),
+            SizedBox(width: 8),
+            Text('Nenhum grupo disponível', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
+    }
+    
+    // Safety check: Ensure selectedGroupId exists in the groups list
+    if (_selectedGroupId.isEmpty || !groups.any((g) => g.id == _selectedGroupId)) {
+      // If no valid selection, use the first group
+      if (groups.isNotEmpty) {
+        _selectedGroupId = groups.first.id;
+      }
+    }
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -586,6 +687,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
             address: _addressController.text,
             isActive: _isActive,
             groupId: _selectedGroupId,
+            userId: widget.camera!.userId,
           );
           
           await _cameraService.updateCamera(updatedCamera);
@@ -606,16 +708,16 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
             ),
           );
         } else {
-          final cameraName = _nameController.text;
           final newCamera = Camera(
             id: '', 
-            name: cameraName,
+            name: _nameController.text,
             brand: _brandController.text,
             model: _modelController.text,
             ipAddress: _ipAddressController.text,
             address: _addressController.text,
             isActive: _isActive,
             groupId: _selectedGroupId,
+            userId: _authService.userId,
           );
 
           await _cameraService.addCamera(newCamera);
@@ -625,8 +727,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Câmera $cameraName cadastrada com sucesso'),
-              backgroundColor: Colors.green,
+              content: Text('Câmera ${_nameController.text} cadastrada com sucesso'),
               behavior: SnackBarBehavior.floating,
               margin: const EdgeInsets.all(16),
               shape: RoundedRectangleBorder(

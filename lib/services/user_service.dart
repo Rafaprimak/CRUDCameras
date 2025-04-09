@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import '../models/user.dart';
+import '../services/auth_service.dart';
 
 class UserService {
   static final UserService _instance = UserService._internal();
@@ -44,27 +45,37 @@ class UserService {
   
   // Authenticate user
   Future<AppUser> loginUser(String email, String password) async {
-    // Hash the password for comparison
-    final passwordHash = _hashPassword(password);
-    
-    // Find user with matching email
-    final userDocs = await _usersCollection
-        .where('email', isEqualTo: email.toLowerCase())
-        .get();
-    
-    if (userDocs.docs.isEmpty) {
-      throw 'Usuário não encontrado';
+    try {
+      // Hash the password for comparison
+      final passwordHash = _hashPassword(password);
+      
+      // Find user with matching email
+      final userDocs = await _usersCollection
+          .where('email', isEqualTo: email.toLowerCase())
+          .get();
+      
+      if (userDocs.docs.isEmpty) {
+        throw 'Usuário não encontrado';
+      }
+      
+      final userDoc = userDocs.docs.first;
+      final userData = userDoc.data() as Map<String, dynamic>;
+      
+      // Check if password matches
+      if (userData['passwordHash'] != passwordHash) {
+        throw 'Senha incorreta';
+      }
+      
+      final user = AppUser.fromFirestore(userDoc);
+      
+      // Set the current user in AuthService
+      final authService = AuthService();
+      authService.setCurrentUser(user);
+      
+      return user;
+    } catch (e) {
+      rethrow;
     }
-    
-    final userDoc = userDocs.docs.first;
-    final userData = userDoc.data() as Map<String, dynamic>;
-    
-    // Check if password matches
-    if (userData['passwordHash'] != passwordHash) {
-      throw 'Senha incorreta';
-    }
-    
-    return AppUser.fromFirestore(userDoc);
   }
   
   // Hash password using SHA-256

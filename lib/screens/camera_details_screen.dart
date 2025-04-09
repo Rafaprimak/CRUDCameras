@@ -735,6 +735,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
         address: widget.camera.address,
         isActive: !widget.camera.isActive,
         groupId: widget.camera.groupId,
+        userId: widget.camera.userId,
       );
       
       await _cameraService.updateCamera(updatedCamera);

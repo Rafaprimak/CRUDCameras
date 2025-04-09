@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/camera.dart';
+import '../services/auth_service.dart';
 import '../services/camera_service.dart';
 import '../services/camera_group_service.dart';
 import '../utils/custom_route.dart';
@@ -44,8 +45,13 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
 
   Future<void> _loadData() async {
     try {
+      // Ensure the default group exists first
+      await _groupService.ensureDefaultGroupExists();
+      
+      // Then get cameras and groups
       await _cameraService.getCameras();
       await _groupService.getGroups();
+      
       _cachedCameras = List.from(_cameraService.cameras);
       if (mounted) setState(() {});
     } catch (e) {
@@ -879,18 +885,60 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
   }
 
   void _navigateToCameraForm(BuildContext context, {Camera? camera}) async {
-    final result = await Navigator.push(
-      context,
-      CustomPageRoute(
-        child: CameraFormScreen(camera: camera),
+    // Show a loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
       ),
     );
-
-    if (result == true) {
-      await _cameraService.getCameras();
+    
+    try {
+      // Pre-load all required data
+      await _groupService.ensureDefaultGroupExists();
       await _groupService.getGroups();
-      _cachedCameras = List.from(_cameraService.cameras);
-      setState(() {});
+      
+      // Important: Close loading dialog BEFORE navigation
+      if (mounted) Navigator.of(context).pop();
+      
+      // Use custom page route with fade transition instead of slide
+      final result = await Navigator.push(
+        context,
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 300),
+          reverseTransitionDuration: const Duration(milliseconds: 300),
+          pageBuilder: (context, animation, secondaryAnimation) => CameraFormScreen(
+            camera: camera,
+            preloadedGroups: _groupService.groups,
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+        ),
+      );
+
+      // Process result after returning
+      if (result == true) {
+        await _cameraService.getCameras();
+        await _groupService.getGroups();
+        _cachedCameras = List.from(_cameraService.cameras);
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao carregar dados: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+        ),
+      );
     }
   }
 
@@ -997,6 +1045,10 @@ class _CameraListScreenState extends State<CameraListScreen> with SingleTickerPr
               foregroundColor: Colors.white,
             ),
             onPressed: () {
+              // Clear user data
+              AuthService().logout();
+              
+              // Return to welcome screen
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
                   builder: (context) => const WelcomeScreen(),

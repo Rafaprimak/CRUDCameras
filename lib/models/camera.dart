@@ -9,6 +9,7 @@ class Camera {
   final String model;
   final bool isActive;
   final String groupId;
+  final String userId; // Add this field
 
   Camera({
     required this.id,
@@ -19,8 +20,8 @@ class Camera {
     required this.model,
     required this.isActive,
     required this.groupId,
+    required this.userId, // Add this parameter
   });
-
 
   factory Camera.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -33,9 +34,9 @@ class Camera {
       model: data['model'] ?? '',
       isActive: data['isActive'] ?? true,
       groupId: data['groupId'] ?? '',
+      userId: data['userId'] ?? '', // Extract userId
     );
   }
-
 
   Map<String, dynamic> toFirestore() {
     return {
@@ -46,6 +47,7 @@ class Camera {
       'model': model,
       'isActive': isActive,
       'groupId': groupId,
+      'userId': userId, // Include userId
     };
   }
 }

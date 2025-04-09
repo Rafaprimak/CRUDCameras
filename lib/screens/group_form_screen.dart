@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../models/camera_group.dart';
 import '../services/camera_group_service.dart';
+import '../services/auth_service.dart'; // Add this import
 
 class GroupFormScreen extends StatefulWidget {
   final CameraGroup? group;
@@ -16,6 +17,7 @@ class GroupFormScreen extends StatefulWidget {
 class _GroupFormScreenState extends State<GroupFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final CameraGroupService _groupService = CameraGroupService();
+  final AuthService _authService = AuthService(); // Add this line
   
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -458,6 +460,7 @@ class _GroupFormScreenState extends State<GroupFormScreen> {
             description: _descriptionController.text,
             iconName: _selectedIcon,
             colorValue: _selectedColor,
+            userId: widget.group!.userId,
           );
           
           await _groupService.updateGroup(updatedGroup);
@@ -482,6 +485,7 @@ class _GroupFormScreenState extends State<GroupFormScreen> {
             description: _descriptionController.text,
             iconName: _selectedIcon,
             colorValue: _selectedColor,
+            userId: _authService.userId, // Use AuthService for user ID
           );
           
           await _groupService.addGroup(newGroup);

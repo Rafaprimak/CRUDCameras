@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'camera_list_screen.dart';
 import '../services/user_service.dart';
+import '../services/camera_group_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -419,6 +420,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                           _emailController.text.trim(),
                           _passwordController.text
                         );
+                        
+                        // Initialize services to create default groups for this user
+                        final groupService = CameraGroupService();
+                        await groupService.initialize();
                         
                         // Close loading dialog
                         if (mounted) Navigator.pop(context);
