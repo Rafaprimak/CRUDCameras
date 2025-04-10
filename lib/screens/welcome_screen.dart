@@ -112,7 +112,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
           physics: const ClampingScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: screenHeight,
+              minHeight: screenHeight - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom, // Account for system UI
             ),
             child: Stack(
               children: [
@@ -145,7 +145,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                   child: Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: MediaQuery.of(context).size.width > 600 ? 40 : 20,
-                      vertical: 40,
+                      vertical: MediaQuery.of(context).size.height < 600 ? 20 : 40, // Adjust based on height
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -154,10 +154,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                           duration: const Duration(milliseconds: 500),
                           curve: Curves.easeInOut,
                           height: isFormVisible ? 
-                            (MediaQuery.of(context).size.height > 650 ? 170 : 
-                             (MediaQuery.of(context).size.height > 600 ? 150 : 135)) : 
-                            (MediaQuery.of(context).size.width > 380 ? 280 : 
-                             (MediaQuery.of(context).size.width > 340 ? 240 : 215)),
+                            (MediaQuery.of(context).size.height > 650 ? 160 : 
+                             (MediaQuery.of(context).size.height > 600 ? 130 : 120)) : 
+                            (MediaQuery.of(context).size.width > 380 ? 270 : 
+                             (MediaQuery.of(context).size.width > 340 ? 220 : 190)),
                           child: AnimatedBuilder(
                             animation: _controller,
                             builder: (context, child) {
@@ -174,15 +174,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                             },
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Hero(
                                   tag: 'app_logo',
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 500),
                                     width: isFormVisible ? 
-                                      (MediaQuery.of(context).size.height > 650 ? 100 : 80) : 150,
+                                      (MediaQuery.of(context).size.height > 650 ? 90 : 75) : 140,
                                     height: isFormVisible ? 
-                                      (MediaQuery.of(context).size.height > 650 ? 100 : 80) : 150,
+                                      (MediaQuery.of(context).size.height > 650 ? 90 : 75) : 140,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       gradient: LinearGradient(
@@ -208,10 +209,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                                         ),
                                       ],
                                     ),
-                                    padding: EdgeInsets.all(isFormVisible ? 8 : 16),
+                                    padding: EdgeInsets.all(isFormVisible ? 6 : 14),
                                     child: Center(
                                       child: Container(
-                                        padding: EdgeInsets.all(isFormVisible ? 6 : 12),
+                                        padding: EdgeInsets.all(isFormVisible ? 5 : 10),
                                         decoration: const BoxDecoration(
                                           shape: BoxShape.circle,
                                           gradient: LinearGradient(
@@ -228,9 +229,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                                           child: Image.asset(
                                             'assets/images/armadillo_logo.png',
                                             width: isFormVisible ? 
-                                              (MediaQuery.of(context).size.height > 650 ? 55 : 45) : 100,
+                                              (MediaQuery.of(context).size.height > 650 ? 50 : 40) : 90,
                                             height: isFormVisible ? 
-                                              (MediaQuery.of(context).size.height > 650 ? 55 : 45) : 100,
+                                              (MediaQuery.of(context).size.height > 650 ? 50 : 40) : 90,
                                             color: Colors.white,
                                           ),
                                         ),
@@ -238,18 +239,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                                     ),
                                   ),
                                 ),
-                                SizedBox(height: isFormVisible ? 10 : 24),
+                                SizedBox(height: isFormVisible ? 6 : 16),
                                 FittedBox(
                                   fit: BoxFit.scaleDown,
                                   child: AnimatedDefaultTextStyle(
                                     duration: const Duration(milliseconds: 500),
                                     style: TextStyle(
                                       fontSize: isFormVisible ? 
-                                        (MediaQuery.of(context).size.width > 380 ? 32 : 24) : 
-                                        (MediaQuery.of(context).size.width > 380 ? 48 : 36),
+                                        (MediaQuery.of(context).size.width > 380 ? 28 : 22) : 
+                                        (MediaQuery.of(context).size.width > 380 ? 44 : 32),
                                       fontWeight: FontWeight.w700,
                                       color: Colors.black87,
-                                      letterSpacing: 1.5,
+                                      height: 1.0,
+                                      letterSpacing: isFormVisible ? 1.0 : 1.5,
                                       shadows: [
                                         Shadow(
                                           color: Colors.black.withAlpha(26),
@@ -261,36 +263,35 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                                     child: const Text('Armadillo'),
                                   ),
                                 ),
-                                
-                                if (!isFormVisible) ...[
-                                  SizedBox(height: MediaQuery.of(context).size.width < 340 ? 2 : 4),
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        maxWidth: MediaQuery.of(context).size.width * 0.85,
-                                      ),
-                                      child: Text(
-                                        'Sistema de Segurança inteligente',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: MediaQuery.of(context).size.width < 340 ? 13 : 15,
-                                          height: 1.0,
-                                          color: Colors.black54,
-                                          fontWeight: MediaQuery.of(context).size.width < 340 ? 
-                                            FontWeight.normal : FontWeight.w500,
-                                          letterSpacing: MediaQuery.of(context).size.width < 340 ? 0.2 : 0.4,
+                                if (!isFormVisible) 
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          'Sistema de Segurança inteligente',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: MediaQuery.of(context).size.width < 340 ? 10 : 12,
+                                            height: 0.9,
+                                            color: Colors.black54,
+                                            fontWeight: MediaQuery.of(context).size.width < 340 ? 
+                                              FontWeight.w300 : FontWeight.w400,
+                                            letterSpacing: MediaQuery.of(context).size.width < 340 ? 0.0 : 0.1,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ],
                               ],
                             ),
                           ),
                         ),
                         
-                        SizedBox(height: isFormVisible ? 20 : 50),
+                        SizedBox(height: isFormVisible ? 
+                          (MediaQuery.of(context).size.height < 600 ? 5 : 10) : // Less spacing
+                          (MediaQuery.of(context).size.height < 600 ? 20 : 30)), // Less spacing
                         
                         AnimatedOpacity(
                           opacity: _showButton ? 1.0 : 0.0,
