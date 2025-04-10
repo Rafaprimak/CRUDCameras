@@ -31,9 +31,9 @@ dependencies:
   flutter:
     sdk: flutter
   # Remove firebase_auth for now
-  firebase_core: ^2.14.0  # Specific version for compatibility
-  cloud_firestore: ^4.8.2  # Specific version for compatibility
-  uuid: ^3.0.7
+  firebase_core: ^3.13.0  # Specific version for compatibility
+  cloud_firestore: ^5.6.6  # Specific version for compatibility
+  uuid: ^4.5.1
   crypto: ^3.0.3
 
 dev_dependencies:
