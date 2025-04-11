@@ -9,7 +9,11 @@ class Camera {
   final String model;
   final bool isActive;
   final String groupId;
-  final String userId; // Add this field
+  final String userId;
+  final String username;
+  final String password;
+  final int port;
+  final int? onvifPort; // Nova propriedade
 
   Camera({
     required this.id,
@@ -20,7 +24,11 @@ class Camera {
     required this.model,
     required this.isActive,
     required this.groupId,
-    required this.userId, // Add this parameter
+    required this.userId,
+    this.username = 'admin',
+    this.password = 'admin',
+    this.port = 554,
+    this.onvifPort = 80,
   });
 
   factory Camera.fromFirestore(DocumentSnapshot doc) {
@@ -34,7 +42,11 @@ class Camera {
       model: data['model'] ?? '',
       isActive: data['isActive'] ?? true,
       groupId: data['groupId'] ?? '',
-      userId: data['userId'] ?? '', // Extract userId
+      userId: data['userId'] ?? '',
+      username: data['username'] ?? 'admin',
+      password: data['password'] ?? '',
+      port: data['port'] is int ? data['port'] : 554,
+      onvifPort: data['onvifPort'] is int ? data['onvifPort'] : 80,
     );
   }
 
@@ -47,7 +59,11 @@ class Camera {
       'model': model,
       'isActive': isActive,
       'groupId': groupId,
-      'userId': userId, // Include userId
+      'userId': userId,
+      'username': username,
+      'password': password,
+      'port': port,
+      'onvifPort': onvifPort,
     };
   }
 }

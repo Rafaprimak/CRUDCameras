@@ -35,6 +35,10 @@ dependencies:
   cloud_firestore: ^5.6.6  # Specific version for compatibility
   uuid: ^4.5.1
   crypto: ^3.0.3
+  flutter_vlc_player: ^7.4.0  # Para streaming RTSP
+  http: ^1.1.0  # Para requisições HTTP aos endpoints da câmera
+  xml: ^6.3.0  # Para parsing de respostas ONVIF
+  # onvif: ^1.0.0  # Remova esta linha ou comente-a
 
 dev_dependencies:
   flutter_test:

@@ -32,6 +32,9 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
   final _brandController = TextEditingController();
   final _modelController = TextEditingController();
   final _ipAddressController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _portController = TextEditingController();
   bool _isActive = true;
   String _selectedGroupId = '';
   bool _isInitialized = false;
@@ -55,6 +58,15 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
       _addressController.text = widget.camera!.address;
       _isActive = widget.camera!.isActive;
       _selectedGroupId = widget.camera!.groupId;
+      
+      // Initialize connection credentials
+      _usernameController.text = widget.camera!.username;
+      _passwordController.text = widget.camera!.password;
+      _portController.text = widget.camera!.port.toString();
+    } else {
+      // Default values for new cameras
+      _usernameController.text = 'admin';
+      _portController.text = '554';
     }
   }
 
@@ -124,6 +136,9 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
     _brandController.dispose();
     _modelController.dispose();
     _ipAddressController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _portController.dispose();
     super.dispose();
   }
 
@@ -159,289 +174,290 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 24),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: customYellow.withAlpha(26),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: customYellow,
-                                width: 2,
-                              ),
-                            ),
-                            child: Icon(
-                              _isEditing ? Icons.edit_note : Icons.add_circle_outline,
-                              color: customYellow,
-                              size: 28,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _isEditing ? 'Editando câmera' : 'Nova câmera',
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _isEditing
-                                      ? 'Atualize as informações da câmera'
-                                      : 'Preencha os dados para cadastrar uma nova câmera',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    _buildSectionCard(
-                      title: 'Informações Básicas',
-                      titleIcon: Icons.info_outline,
-                      children: [
-                        _buildTextField(
-                          controller: _nameController,
-                          labelText: 'Nome da Câmera',
-                          icon: Icons.camera_alt,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, insira um nome';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 24),
+                        child: Row(
                           children: [
-                            Expanded(
-                              child: _buildTextField(
-                                controller: _brandController,
-                                labelText: 'Marca',
-                                icon: Icons.business,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Por favor, insira uma marca';
-                                  }
-                                  return null;
-                                },
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: customYellow.withAlpha(26),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: customYellow,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Icon(
+                                _isEditing ? Icons.edit_note : Icons.add_circle_outline,
+                                color: customYellow,
+                                size: 28,
                               ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: _buildTextField(
-                                controller: _modelController,
-                                labelText: 'Modelo',
-                                icon: Icons.devices,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Por favor, insira um modelo';
-                                  }
-                                  return null;
-                                },
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _isEditing ? 'Editando câmera' : 'Nova câmera',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _isEditing
+                                        ? 'Atualize as informações da câmera'
+                                        : 'Preencha os dados para cadastrar uma nova câmera',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                    
-                    _buildSectionCard(
-                      title: 'Configurações de Rede',
-                      titleIcon: Icons.router,
-                      children: [
-                        _buildTextField(
-                          controller: _ipAddressController,
-                          labelText: 'Endereço IP',
-                          icon: Icons.wifi,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, insira um endereço IP';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                    
-                    _buildSectionCard(
-                      title: 'Localização',
-                      titleIcon: Icons.location_on,
-                      children: [
-                        _buildTextField(
-                          controller: _addressController,
-                          labelText: 'Endereço',
-                          icon: Icons.home,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, insira um endereço';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                    
-                    _buildSectionCard(
-                      title: 'Grupo',
-                      titleIcon: Icons.folder,
-                      children: [
-                        _buildGroupSelector(),
-                      ],
-                    ),
-                    
-                    _buildSectionCard(
-                      title: 'Status',
-                      titleIcon: Icons.settings,
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          decoration: BoxDecoration(
-                            color: (_isActive ? Colors.green : Colors.red).withAlpha(40),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _isActive ? Colors.green : Colors.red,
-                              width: 1.5,
-                            ),
+                      ),
+
+                      _buildSectionCard(
+                        title: 'Informações Básicas',
+                        titleIcon: Icons.info_outline,
+                        children: [
+                          _buildTextField(
+                            controller: _nameController,
+                            labelText: 'Nome da Câmera',
+                            icon: Icons.camera_alt,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor, insira um nome';
+                              }
+                              return null;
+                            },
                           ),
-                          child: Material(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                            clipBehavior: Clip.antiAlias,
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _isActive = !_isActive;
-                                });
-                                HapticFeedback.selectionClick();
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: (_isActive ? Colors.green : Colors.red).withAlpha(60),
-                                        shape: BoxShape.circle,
+                          const SizedBox(height: 16),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: _buildTextField(
+                                  controller: _brandController,
+                                  labelText: 'Marca',
+                                  icon: Icons.business,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Por favor, insira uma marca';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildTextField(
+                                  controller: _modelController,
+                                  labelText: 'Modelo',
+                                  icon: Icons.devices,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Por favor, insira um modelo';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      
+                      _buildSectionCard(
+                        title: 'Configurações de Rede',
+                        titleIcon: Icons.router,
+                        children: [
+                          _buildTextField(
+                            controller: _ipAddressController,
+                            labelText: 'Endereço IP',
+                            icon: Icons.wifi,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor, insira um endereço IP';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                      
+                      _buildConnectionCredentials(),
+                      
+                      _buildSectionCard(
+                        title: 'Localização',
+                        titleIcon: Icons.location_on,
+                        children: [
+                          _buildTextField(
+                            controller: _addressController,
+                            labelText: 'Endereço',
+                            icon: Icons.home,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor, insira um endereço';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                      
+                      _buildSectionCard(
+                        title: 'Grupo',
+                        titleIcon: Icons.folder,
+                        children: [
+                          _buildGroupSelector(),
+                        ],
+                      ),
+                      
+                      _buildSectionCard(
+                        title: 'Status',
+                        titleIcon: Icons.settings,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            decoration: BoxDecoration(
+                              color: (_isActive ? Colors.green : Colors.red).withAlpha(40),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _isActive ? Colors.green : Colors.red,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              clipBehavior: Clip.antiAlias,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _isActive = !_isActive;
+                                  });
+                                  HapticFeedback.selectionClick();
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: (_isActive ? Colors.green : Colors.red).withAlpha(60),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          _isActive ? Icons.visibility : Icons.visibility_off,
+                                          color: _isActive ? Colors.green : Colors.red,
+                                          size: 24,
+                                        ),
                                       ),
-                                      child: Icon(
-                                        _isActive ? Icons.visibility : Icons.visibility_off,
-                                        color: _isActive ? Colors.green : Colors.red,
-                                        size: 24,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Câmera Ativa',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 16,
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Câmera Ativa',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 16,
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            _isActive ? 'A câmera está ativa' : 'A câmera está inativa',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: _isActive ? Colors.green.shade700 : Colors.red.shade700,
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              _isActive ? 'A câmera está ativa' : 'A câmera está inativa',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: _isActive ? Colors.green.shade700 : Colors.red.shade700,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    Switch(
-                                      value: _isActive,
-                                      activeColor: Colors.green,
-                                      activeTrackColor: Colors.green.withAlpha(128),
-                                      inactiveThumbColor: Colors.red,
-                                      inactiveTrackColor: Colors.red.withAlpha(128),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _isActive = value;
-                                        });
-                                        HapticFeedback.selectionClick();
-                                      },
-                                    ),
-                                  ],
+                                      Switch(
+                                        value: _isActive,
+                                        activeColor: Colors.green,
+                                        activeTrackColor: Colors.green.withAlpha(128),
+                                        inactiveThumbColor: Colors.red,
+                                        inactiveTrackColor: Colors.red.withAlpha(128),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _isActive = value;
+                                          });
+                                          HapticFeedback.selectionClick();
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.cancel),
+                      label: const Text('Cancelar'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.grey[800],
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
-                    
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.cancel),
-                          label: const Text('Cancelar'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.grey[800],
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: () => Navigator.of(context).pop(),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.save),
+                      label: const Text('Salvar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: customYellow,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        const SizedBox(width: 16),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.save),
-                          label: const Text('Salvar'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: customYellow,
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            minimumSize: const Size(150, 48), 
-                          ),
-                          onPressed: () {
-                            HapticFeedback.mediumImpact();
-                            setState(() {});
-                            Future.microtask(() => _saveCamera());
-                          },
-                        ),
-                      ],
+                        minimumSize: const Size(150, 48), 
+                      ),
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        setState(() {});
+                        Future.microtask(() => _saveCamera());
+                      },
                     ),
-                    const SizedBox(height: 20),
                   ],
                 ),
-              ),
+                const SizedBox(height: 20),
+              ],
             ),
           ),
         ),
@@ -503,14 +519,19 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
     required IconData icon,
     String? Function(String?)? validator,
     TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+    String? hintText,
+    bool obscureText = false,
   }) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: TextFormField(
         controller: controller,
+        obscureText: obscureText,
         decoration: InputDecoration(
           labelText: labelText,
+          hintText: hintText,
           prefixIcon: Icon(icon, size: 20),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
@@ -530,6 +551,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
           fillColor: Colors.white,
         ),
         keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
         validator: validator,
         style: const TextStyle(fontSize: 16, height: 1.1),
         onTapOutside: (_) => FocusScope.of(context).unfocus(),
@@ -688,6 +710,10 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
             isActive: _isActive,
             groupId: _selectedGroupId,
             userId: widget.camera!.userId,
+            username: _usernameController.text,
+            password: _passwordController.text,
+            port: int.tryParse(_portController.text) ?? 554,
+            onvifPort: widget.camera!.onvifPort ?? 80, // Preserve ONVIF port
           );
           
           await _cameraService.updateCamera(updatedCamera);
@@ -708,6 +734,7 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
             ),
           );
         } else {
+          // For new camera, ensure credentials are included
           final newCamera = Camera(
             id: '', 
             name: _nameController.text,
@@ -718,7 +745,18 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
             isActive: _isActive,
             groupId: _selectedGroupId,
             userId: _authService.userId,
+            username: _usernameController.text.isNotEmpty ? _usernameController.text : 'admin',
+            password: _passwordController.text,
+            port: int.tryParse(_portController.text) ?? 554,
+            onvifPort: 80, // Default ONVIF port
           );
+
+          // Print debug information
+          print('Salvando câmera com credenciais:');
+          print('Username: ${newCamera.username}');
+          print('Password: ${newCamera.password}');
+          print('Port: ${newCamera.port}');
+          print('ONVIF Port: ${newCamera.onvifPort}');
 
           await _cameraService.addCamera(newCamera);
           
@@ -762,5 +800,44 @@ class _CameraFormScreenState extends State<CameraFormScreen> {
         );
       }
     }
+  }
+
+  Widget _buildConnectionCredentials() {
+    return _buildSectionCard(
+      title: 'Credenciais de Conexão',
+      titleIcon: Icons.security,
+      children: [
+        _buildTextField(
+          controller: _usernameController,
+          labelText: 'Nome de Usuário',
+          icon: Icons.person,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _passwordController,
+          labelText: 'Senha',
+          icon: Icons.lock,
+          obscureText: true,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _portController,
+          labelText: 'Porta',
+          icon: Icons.router,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Por favor, insira a porta';
+            }
+            final port = int.tryParse(value);
+            if (port == null || port <= 0 || port > 65535) {
+              return 'Porta inválida (1-65535)';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
   }
 }

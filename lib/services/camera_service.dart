@@ -81,21 +81,22 @@ class CameraService {
   }
 
   Future<void> addCamera(Camera camera) async {
-    // Make sure camera includes current user ID
-    final cameraWithUserId = Camera(
-      id: camera.id,
-      name: camera.name,
-      brand: camera.brand,
-      model: camera.model,
-      ipAddress: camera.ipAddress,
-      address: camera.address,
-      isActive: camera.isActive,
-      groupId: camera.groupId,
-      userId: _authService.userId,
-    );
-    
-    await _camerasCollection.add(cameraWithUserId.toFirestore());
-    await getCameras();
+    try {
+      final data = camera.toFirestore();
+      
+      // Debug logging
+      print('Adding camera to Firestore with data:');
+      print(data);
+      
+      // Add to Firestore
+      await _camerasCollection.add(data);
+      
+      // Refresh cameras list
+      await getCameras();
+    } catch (e) {
+      print('Error adding camera: $e');
+      throw e;
+    }
   }
 
   Future<void> updateCamera(Camera camera) async {

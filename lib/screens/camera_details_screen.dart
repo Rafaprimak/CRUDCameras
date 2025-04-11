@@ -5,6 +5,7 @@ import '../models/camera.dart';
 import '../services/camera_service.dart';
 import '../services/camera_group_service.dart';
 import 'camera_form_screen.dart';
+import 'camera_view_screen.dart';
 
 class CameraDetailsScreen extends StatefulWidget {
   final Camera camera;
@@ -163,6 +164,22 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                             _camera.isActive ? Icons.do_not_disturb : Icons.check_circle_outline, 
                             _camera.isActive ? Colors.red : Colors.green,
                             () => _showToggleActiveDialog(context),
+                          ),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.videocam),
+                            label: const Text('Visualizar câmera'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CameraViewScreen(camera: _camera),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
