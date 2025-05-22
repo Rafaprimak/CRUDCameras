@@ -5,7 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../algoritmo/python_bridge.dart';
+import '../algoritmo/direct_python_bridge.dart'; // Changed import
 import '../models/camera.dart' as camera_model;
 
 class DeviceCameraViewScreen extends StatefulWidget {
@@ -23,7 +23,7 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   bool _isInitialized = false;
   bool _isDetectionEnabled = false;
   bool _isDetectorReady = false;
-  WeaponDetectorBridge? _weaponDetector;
+  DirectPythonBridge? _weaponDetector; // Changed type
   bool _weaponDetected = false;
   String _lastDetectionMessage = '';
   Timer? _detectionTimer;
@@ -62,8 +62,8 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   }
 
   Future<void> _initializeDetector() async {
-    // Use port 5555 to avoid conflicts
-    _weaponDetector = WeaponDetectorBridge(serverUrl: 'http://127.0.0.1:5555');
+    // Use the direct Python bridge
+    _weaponDetector = DirectPythonBridge();
     
     try {
       final initialized = await _weaponDetector!.initialize();
