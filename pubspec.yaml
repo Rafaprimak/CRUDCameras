@@ -39,6 +39,9 @@ dependencies:
   http: ^1.1.0  # Para requisições HTTP aos endpoints da câmera
   xml: ^6.3.0  # Para parsing de respostas ONVIF
   # onvif: ^1.0.0  # Remova esta linha ou comente-a
+  camera: ^0.10.5+5  # Use latest version
+  path_provider: ^2.1.1
+  path: ^1.8.3
 
 dev_dependencies:
   flutter_test:

@@ -25,22 +25,8 @@ Video clip export and sharing
 Organization & Management
 Camera Grouping System
 
-Group cameras by location/building/floor
-Create custom groups (e.g., "Exterior", "High Security")
 Batch operations for multiple cameras
-Interactive Map View
 
-Display cameras on a floor plan or map
-Visualize camera coverage areas
-Click cameras on map to access live view
-Maintenance Scheduling
-
-Set maintenance reminders
-Track service history
-Generate maintenance reports
-Access Control
-
-User account system with roles (admin, security, viewer)
 Biometric authentication for app access
 Detailed access logs
 Analytics & Information
@@ -84,7 +70,6 @@ Summary of events when opening the app
 Which to Implement First?
 The most impactful features to implement first would be:
 
-Camera Grouping - Immediately improves organization for users with many cameras
 Live View Dashboard - Adds core functionality users would expect
 Dark Mode - Relatively easy to implement with high user satisfaction
 Enhanced SOS System - Builds on your existing SOS feature for better emergency response

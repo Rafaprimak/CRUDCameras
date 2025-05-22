@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/camera.dart';
-import '../services/camera_service.dart';
 import '../services/camera_group_service.dart';
+import '../services/camera_service.dart';
 import 'camera_form_screen.dart';
-import 'camera_view_screen.dart';
+import 'device_camera_view_screen.dart'; // <-- Import the new screen
 
 class CameraDetailsScreen extends StatefulWidget {
   final Camera camera;
@@ -176,7 +176,7 @@ class _CameraDetailsScreenState extends State<CameraDetailsScreen> with SingleTi
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => CameraViewScreen(camera: _camera),
+                                  builder: (context) => DeviceCameraViewScreen(cameraInfo: _camera),
                                 ),
                               );
                             },

@@ -8,8 +8,8 @@ class OnvifService {
   final String password;
   String? _deviceServiceUri;
   String? _ptzServiceUri;
-  String? _mediaServiceUri;
   String? _authToken;
+  String? _mediaServiceUri;
 
   OnvifService({
     required this.ipAddress,
@@ -63,7 +63,9 @@ class OnvifService {
       _deviceServiceUri = _extractServiceUri(document, 'Device');
       _ptzServiceUri = _extractServiceUri(document, 'PTZ');
       _mediaServiceUri = _extractServiceUri(document, 'Media');
-      
+      if (_mediaServiceUri != null) {
+        print('Media Service URI: $_mediaServiceUri');
+      }
       return _deviceServiceUri != null;
     } catch (e) {
       print('Erro ao descobrir serviços ONVIF: $e');
