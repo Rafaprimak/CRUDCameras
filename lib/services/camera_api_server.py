@@ -10,6 +10,42 @@ import base64
 import numpy as np
 from pathlib import Path
 
+# Try to import flask_cors or install it
+try:
+    from flask_cors import CORS
+except ImportError:
+    print("Flask-CORS not found. Attempting to install...")
+    import subprocess
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "flask-cors"])
+        from flask_cors import CORS
+        print("Flask-CORS installed successfully!")
+    except Exception as e:
+        print(f"Failed to install Flask-CORS: {e}")
+        # Fallback implementation of CORS
+        print("Using fallback CORS implementation")
+        
+        # Simple CORS implementation to use if flask_cors is unavailable
+        def CORS(app):
+            @app.after_request
+            def add_cors_headers(response):
+                response.headers.add('Access-Control-Allow-Origin', '*')
+                response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+                response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+                return response
+            return app
+
+import os
+import json
+import time
+import threading
+from datetime import datetime
+import sys
+import cv2
+import base64
+import numpy as np
+from pathlib import Path
+
 # Add path for importing weapon detector
 sys.path.append(str(Path(__file__).parent.parent))
 try:
@@ -33,13 +69,18 @@ def initialize_detector():
         return False
         
     try:
-        # Look for model in common paths
+        # Look for model in common paths with better diagnostics
         model_paths = [
             Path(__file__).parent.parent.parent / 'models' / 'violence_detectorAerithV2.pt',
             Path('models/violence_detectorAerithV2.pt'),
             Path(r'c:\Users\Rafael\Desktop\crud\CRUDCameras\models\violence_detectorAerithV2.pt')
         ]
         
+        # Print all potential paths for debugging
+        print("Checking model paths:")
+        for path in model_paths:
+            print(f" - {path} (exists: {path.exists()})")
+            
         model_path = None
         for path in model_paths:
             if path.exists():
@@ -48,16 +89,20 @@ def initialize_detector():
                 break
                 
         if model_path is None:
-            print("Could not find the model file")
+            print("ERROR: Could not find the model file. Please place it in one of these locations:")
+            for path in model_paths:
+                print(f" - {path}")
             return False
             
-        # Initialize detector
+        # Initialize detector with more detailed logging
+        print(f"Creating WeaponDetector with model_path={model_path}")
         detector = WeaponDetector(model_path=model_path)
+        print("WeaponDetector instance created, calling start()...")
         success = detector.start()
-        print(f"Weapon detector initialized: {success}")
+        print(f"Weapon detector initialized and started: {success}")
         return success
     except Exception as e:
-        print(f"Error initializing detector: {e}")
+        print(f"ERROR initializing detector: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -67,6 +112,7 @@ port = int(os.environ.get('CAMERA_API_PORT', 5556))
 data_file = os.environ.get('CAMERA_DATA_FILE', 'camera_analytics.json')
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # In-memory storage
 camera_status = {}
@@ -240,7 +286,7 @@ def get_detection_status():
         'available': detector is not None
     })
 
-@app.route('/detection/start', methods=['POST'])
+@app.route('/detection/start', methods=['GET', 'POST'])
 def start_detection():
     global detector
     
@@ -343,6 +389,40 @@ def detect_objects():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/detection/diagnostics', methods=['GET'])
+def detector_diagnostics():
+    """Endpoint for checking detector status and configuration"""
+    global detector
+    
+    # Check Python path for debugging
+    python_paths = sys.path
+    
+    # Check if model file exists
+    model_paths = [
+        str(Path(__file__).parent.parent.parent / 'models' / 'violence_detectorAerithV2.pt'),
+        str(Path('models/violence_detectorAerithV2.pt')),
+        r'c:\Users\Rafael\Desktop\crud\CRUDCameras\models\violence_detectorAerithV2.pt'
+    ]
+    existing_models = [path for path in model_paths if os.path.exists(path)]
+    
+    # Check detector initialization
+    detector_info = "Not initialized"
+    if detector is not None:
+        detector_info = {
+            "running": getattr(detector, "running", False),
+            "model_path": getattr(detector, "model_path", "Unknown"),
+            "model_loaded": getattr(detector, "model", None) is not None,
+            "class": detector.__class__.__name__
+        }
+    
+    return jsonify({
+        "detector": detector_info,
+        "model_paths_checked": model_paths,
+        "existing_models": existing_models,
+        "python_path": python_paths,
+        "current_directory": os.getcwd()
+    })
+
 if __name__ == '__main__':
     # Load existing data
     loaded_analytics, loaded_incidents = load_data()
@@ -353,14 +433,27 @@ if __name__ == '__main__':
     save_thread = threading.Thread(target=save_data, daemon=True)
     save_thread.start()
     
-    # Initialize weapon detector
-    initialize_detector()
+    # Initialize weapon detector with better error handling
+    print("Initializing weapon detector...")
+    detector_initialized = initialize_detector()
+    if detector_initialized:
+        print("Weapon detector initialized successfully.")
+    else:
+        print("WARNING: Weapon detector initialization failed. Detection features will be disabled.")
     
     # Log startup info
     print(f"Starting camera API server on port {port}...")
     print(f"Current directory: {os.getcwd()}")
+    print(f"Python version: {sys.version}")
+    print(f"OpenCV version: {cv2.__version__}")
+    
+    # Check if detector is working
+    if detector is not None and hasattr(detector, 'running'):
+        print(f"Detector running status: {detector.running}")
+    else:
+        print("Detector not properly initialized")
     
     try:
-        app.run(host='0.0.0.0', port=port)
+        app.run(host='0.0.0.0', port=port, debug=True)
     except Exception as e:
         print(f"Error starting server: {e}")

@@ -31,7 +31,7 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   Timer? _detectionTimer;
   int _processingFrameCount = 0;
   bool _isInitializing = true;
-  String _detectionServerUrl = 'http://127.0.0.1:5556'; // Replace with your server address
+  String _detectionServerUrl = 'http://192.168.3.8:5556'; // Replace with your server address
   
   @override
   void initState() {
@@ -159,35 +159,45 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
       final base64Image = base64Encode(bytes);
       
       // Send to server
-      final response = await http.post(
-        Uri.parse('$_detectionServerUrl/detection/detect'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'image': base64Image,
-          'camera_id': widget.cameraInfo.id,
-        }),
-      );
-      
-      _processingFrameCount--;
-      
-      if (response.statusCode == 200) {
-        final result = jsonDecode(response.body);
+      try {
+        final response = await http.post(
+          Uri.parse('$_detectionServerUrl/detection/detect'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'image': base64Image,
+            'camera_id': widget.cameraInfo.id,
+          }),
+        ).timeout(const Duration(seconds: 5));
         
-        if (mounted) {
-          setState(() {
-            _weaponDetected = result['weapons_detected'] == true;
-            if (result['notification'] == true && result['message'] != null) {
-              _lastDetectionMessage = result['message'];
-              // Add haptic feedback for detection
-              HapticFeedback.heavyImpact();
-            } else if (_weaponDetected) {
-              _lastDetectionMessage = 'Arma detectada!';
-              HapticFeedback.heavyImpact();
-            }
-          });
+        if (response.statusCode == 200) {
+          final result = jsonDecode(response.body);
+          
+          if (mounted) {
+            setState(() {
+              _weaponDetected = result['weapons_detected'] == true;
+              if (result['notification'] == true && result['message'] != null) {
+                _lastDetectionMessage = result['message'];
+                // Add haptic feedback for detection
+                HapticFeedback.heavyImpact();
+              } else if (_weaponDetected) {
+                _lastDetectionMessage = 'Arma detectada!';
+                HapticFeedback.heavyImpact();
+              }
+            });
+          }
+        } else {
+          print('Error from detection server: ${response.statusCode} - ${response.body}');
+          // Notify on connection issues
+          if (mounted && _processingFrameCount <= 1) {
+            _showConnectionError();
+          }
         }
-      } else {
-        print('Error from detection server: ${response.statusCode} - ${response.body}');
+      } catch (e) {
+        print('Network error connecting to server: $e');
+        // Notify on connection issues
+        if (mounted && _processingFrameCount <= 1) {
+          _showConnectionError();
+        }
       }
       
       // Clean up the temporary file
@@ -198,9 +208,32 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
       }
       
     } catch (e) {
-      _processingFrameCount--;
       print('Error capturing frame: $e');
+    } finally {
+      _processingFrameCount--;
     }
+  }
+  
+  void _showConnectionError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.white),
+            SizedBox(width: 10),
+            Expanded(child: Text('Não foi possível conectar ao servidor de detecção. Verifique as configurações.')),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'CONFIGS',
+          textColor: Colors.white,
+          onPressed: _showServerSettingsDialog,
+        ),
+      ),
+    );
   }
   
   void _stopDetection() {
@@ -272,37 +305,147 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Configurações do Servidor'),
+        title: Row(
+          children: [
+            Icon(Icons.cloud_outlined, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Configurações do Servidor'),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text('Digite o endereço IP do seu computador onde o servidor está rodando:',
+              style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+            ),
+            SizedBox(height: 16),
             TextField(
               controller: serverController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'URL do Servidor',
-                hintText: 'http://127.0.0.1:5556'
+                hintText: 'http://192.168.x.x:5556',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.link),
               ),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton.icon(
+              icon: Icon(Icons.network_check),
+              label: Text('Testar Conexão'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              onPressed: () async {
+                try {
+                  final response = await http.get(
+                    Uri.parse('${serverController.text}/health'),
+                  ).timeout(const Duration(seconds: 3));
+                  
+                  if (response.statusCode == 200) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Conexão com servidor estabelecida com sucesso!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Servidor encontrado, mas retornou erro: ${response.statusCode}'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erro ao conectar: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text('Cancelar'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
+            icon: Icon(Icons.save),
+            label: Text('Salvar'),
             onPressed: () {
               setState(() {
                 _detectionServerUrl = serverController.text;
               });
               Navigator.pop(context);
-              // You could save this to SharedPreferences for persistence
+              // Testing connection after saving
+              _testServerConnection();
             },
-            child: const Text('Salvar'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _testServerConnection() async {
+    try {
+      print('Testing connection to: $_detectionServerUrl/health');
+      final response = await http.get(
+        Uri.parse('$_detectionServerUrl/health'),
+      ).timeout(const Duration(seconds: 3));
+      
+      print('Server response: ${response.statusCode} - ${response.body}');
+      
+      if (response.statusCode == 200) {
+        // Now start the detector
+        final detectorStarted = await _startDetector();
+        
+        setState(() {
+          _isDetectorReady = detectorStarted;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(detectorStarted 
+              ? 'Conexão com servidor estabelecida e detector iniciado!' 
+              : 'Conexão com servidor estabelecida, mas detector não pôde ser iniciado.'),
+            backgroundColor: detectorStarted ? Colors.green : Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error testing server connection: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Não foi possível conectar ao servidor: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<bool> _startDetector() async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_detectionServerUrl/detection/start'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 5));
+      
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        return result['success'] == true;
+      }
+      return false;
+    } catch (e) {
+      print('Error starting detector: $e');
+      return false;
+    }
   }
   
   @override
