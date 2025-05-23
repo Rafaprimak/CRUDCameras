@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 import '../algoritmo/direct_python_bridge.dart'; // Changed import
 import '../models/camera.dart' as camera_model;
@@ -29,6 +31,7 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   Timer? _detectionTimer;
   int _processingFrameCount = 0;
   bool _isInitializing = true;
+  String _detectionServerUrl = 'http://127.0.0.1:5556'; // Replace with your server address
   
   @override
   void initState() {
@@ -139,7 +142,6 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
     });
   }
   
-  // FIXED METHOD: This was causing the issues
   void _captureAndProcessFrame() async {
     try {
       if (_cameraController?.value.isInitialized != true) {
@@ -150,12 +152,28 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
       // Take a picture
       final XFile file = await _cameraController!.takePicture();
       
-      // Process the image file directly
-      if (_weaponDetector != null && _isDetectorReady) {
-        final result = await _weaponDetector!.processImageFile(file.path);
-        _processingFrameCount--;
+      // Read file as bytes
+      final bytes = await File(file.path).readAsBytes();
+      
+      // Convert to base64
+      final base64Image = base64Encode(bytes);
+      
+      // Send to server
+      final response = await http.post(
+        Uri.parse('$_detectionServerUrl/detection/detect'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'image': base64Image,
+          'camera_id': widget.cameraInfo.id,
+        }),
+      );
+      
+      _processingFrameCount--;
+      
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
         
-        if (result != null && mounted) {
+        if (mounted) {
           setState(() {
             _weaponDetected = result['weapons_detected'] == true;
             if (result['notification'] == true && result['message'] != null) {
@@ -169,7 +187,7 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
           });
         }
       } else {
-        _processingFrameCount--;
+        print('Error from detection server: ${response.statusCode} - ${response.body}');
       }
       
       // Clean up the temporary file
@@ -248,12 +266,56 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
     }
   }
   
+  void _showServerSettingsDialog() {
+    final serverController = TextEditingController(text: _detectionServerUrl);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Configurações do Servidor'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: serverController,
+              decoration: const InputDecoration(
+                labelText: 'URL do Servidor',
+                hintText: 'http://127.0.0.1:5556'
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _detectionServerUrl = serverController.text;
+              });
+              Navigator.pop(context);
+              // You could save this to SharedPreferences for persistence
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Câmera: ${widget.cameraInfo.name}'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Configurações do Servidor',
+            onPressed: _showServerSettingsDialog,
+          ),
           if (_isDetectorReady)
             IconButton(
               icon: Icon(_isDetectionEnabled ? Icons.security : Icons.security_outlined),
@@ -394,7 +456,7 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
         _stopDetection();
       }
       
-      final image = await _cameraController!.takePicture();
+      await _cameraController!.takePicture();
       
       // Re-enable detection if it was enabled
       if (wasDetectionEnabled && mounted) {
