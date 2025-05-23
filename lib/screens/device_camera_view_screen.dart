@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';  // Add this for Int64List
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../algoritmo/direct_python_bridge.dart'; // Changed import
 import '../models/camera.dart' as camera_model;
@@ -32,12 +34,15 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   int _processingFrameCount = 0;
   bool _isInitializing = true;
   String _detectionServerUrl = 'http://192.168.3.8:5556'; // Replace with your server address
+  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  bool _lastWeaponDetectedState = false; // Track state changes
   
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeAll();
+    _initializeNotifications();
   }
   
   Future<void> _initializeAll() async {
@@ -125,6 +130,48 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
     }
   }
   
+  void _initializeNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+    
+    final DarwinInitializationSettings initializationSettingsIOS =
+      DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+    
+    final InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+    
+    await _notificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse details) {
+        // You can add navigation to the app when notification is tapped
+        print('Notification tapped: ${details.payload}');
+      },
+    );
+    
+    // Request notification permissions
+    if (Platform.isIOS) {
+      await _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+    } else if (Platform.isAndroid) {
+      await _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestPermission();
+    }
+  }
+  
   void _startDetection() {
     if (_cameraController == null || 
         !_cameraController!.value.isInitialized ||
@@ -175,6 +222,10 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
           if (mounted) {
             setState(() {
               _weaponDetected = result['weapons_detected'] == true;
+              if (_weaponDetected && !_lastWeaponDetectedState) {
+                _showWeaponDetectionNotification(result['message'] ?? 'Arma detectada!');
+              }
+              _lastWeaponDetectedState = _weaponDetected;
               if (result['notification'] == true && result['message'] != null) {
                 _lastDetectionMessage = result['message'];
                 // Add haptic feedback for detection
@@ -214,6 +265,45 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
     }
   }
   
+  Future<void> _showWeaponDetectionNotification(String message) async {
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+      AndroidNotificationDetails(
+        'weapon_detection_channel',
+        'Weapon Detection Alerts',
+        channelDescription: 'Alerts when weapons are detected by the camera',
+        importance: Importance.max,
+        priority: Priority.high,
+        ticker: 'Alerta de Segurança',
+        color: Colors.red,
+        enableLights: true,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 500]),
+        icon: '@mipmap/ic_launcher',
+      );
+      
+    const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+      DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        sound: 'alarmsound.wav',
+        badgeNumber: 1,
+      );
+      
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
+    
+    await _notificationsPlugin.show(
+      0,
+      'ALERTA DE SEGURANÇA!',
+      message,
+      platformChannelSpecifics,
+      payload: 'weapon_detected',
+    );
+  }
+  
   void _showConnectionError() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -241,9 +331,27 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
     _detectionTimer = null;
   }
   
+  void _toggleDetection() {
+    setState(() {
+      _isDetectionEnabled = !_isDetectionEnabled;
+    });
+    
+    if (_isDetectionEnabled && _isDetectorReady) {
+      _startDetection();
+    } else {
+      _stopDetection();
+      _weaponDetected = false;
+      _lastWeaponDetectedState = false;
+      // Cancel any active notifications
+      _notificationsPlugin.cancelAll();
+    }
+  }
+  
   @override
   void dispose() {
     _stopDetection();
+    // Cancel all notifications when the screen is disposed
+    _notificationsPlugin.cancelAll();
     if (_cameraController != null) {
       _cameraController!.dispose();
       _cameraController = null;
@@ -285,18 +393,6 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
         behavior: SnackBarBehavior.floating,
       ),
     );
-  }
-  
-  void _toggleDetection() {
-    setState(() {
-      _isDetectionEnabled = !_isDetectionEnabled;
-    });
-    
-    if (_isDetectionEnabled && _isDetectorReady) {
-      _startDetection();
-    } else {
-      _stopDetection();
-    }
   }
   
   void _showServerSettingsDialog() {
