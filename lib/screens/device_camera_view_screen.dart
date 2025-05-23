@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
+import 'dart:convert';  // Keep this one
 import 'dart:io';
-import 'dart:typed_data';  // Add this for Int64List
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -190,23 +190,23 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   }
   
   void _captureAndProcessFrame() async {
+    if (_cameraController?.value.isInitialized != true) {
+      _processingFrameCount--;
+      return;
+    }
+    
     try {
-      if (_cameraController?.value.isInitialized != true) {
-        _processingFrameCount--;
-        return;
-      }
+      // Take the picture but use a direct method to get the bytes
+      final XFile imageFile = await _cameraController!.takePicture();
       
-      // Take a picture
-      final XFile file = await _cameraController!.takePicture();
+      // Get the bytes directly
+      final Uint8List bytes = await imageFile.readAsBytes();
       
-      // Read file as bytes
-      final bytes = await File(file.path).readAsBytes();
+      // Encode to base64 directly with a single call
+      final String base64Image = base64.encode(bytes);
       
-      // Convert to base64
-      final base64Image = base64Encode(bytes);
-      
-      // Send to server
       try {
+        // Send to server
         final response = await http.post(
           Uri.parse('$_detectionServerUrl/detection/detect'),
           headers: {'Content-Type': 'application/json'},
@@ -222,13 +222,18 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
           if (mounted) {
             setState(() {
               _weaponDetected = result['weapons_detected'] == true;
+              
+              // Handle notifications
               if (_weaponDetected && !_lastWeaponDetectedState) {
-                _showWeaponDetectionNotification(result['message'] ?? 'Arma detectada!');
+                _showWeaponDetectionNotification(
+                  result['message'] ?? 'Arma detectada na câmera ${widget.cameraInfo.name}!'
+                );
               }
+              
               _lastWeaponDetectedState = _weaponDetected;
+              
               if (result['notification'] == true && result['message'] != null) {
                 _lastDetectionMessage = result['message'];
-                // Add haptic feedback for detection
                 HapticFeedback.heavyImpact();
               } else if (_weaponDetected) {
                 _lastDetectionMessage = 'Arma detectada!';
@@ -237,29 +242,24 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
             });
           }
         } else {
-          print('Error from detection server: ${response.statusCode} - ${response.body}');
-          // Notify on connection issues
+          print('Server error: ${response.statusCode} - ${response.body}');
           if (mounted && _processingFrameCount <= 1) {
             _showConnectionError();
           }
         }
       } catch (e) {
-        print('Network error connecting to server: $e');
-        // Notify on connection issues
+        print('Network error: $e');
         if (mounted && _processingFrameCount <= 1) {
           _showConnectionError();
         }
+      } finally {
+        // Clean up
+        try {
+          await File(imageFile.path).delete().catchError((_) => File(imageFile.path));
+        } catch (_) {}
       }
-      
-      // Clean up the temporary file
-      try {
-        await File(file.path).delete();
-      } catch (e) {
-        print('Error deleting temporary file: $e');
-      }
-      
     } catch (e) {
-      print('Error capturing frame: $e');
+      print('Camera capture error: $e');
     } finally {
       _processingFrameCount--;
     }
