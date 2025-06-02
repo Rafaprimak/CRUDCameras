@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert';  // Keep this one
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -8,9 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:path_provider/path_provider.dart';
 
-import '../algoritmo/direct_python_bridge.dart'; // Changed import
+import '../algoritmo/direct_python_bridge.dart';
 import '../models/camera.dart' as camera_model;
 import '../services/email_service.dart';
 
@@ -29,15 +28,15 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   bool _isInitialized = false;
   bool _isDetectionEnabled = false;
   bool _isDetectorReady = false;
-  DirectPythonBridge? _weaponDetector; // Changed type
+  DirectPythonBridge? _weaponDetector;
   bool _weaponDetected = false;
   String _lastDetectionMessage = '';
   Timer? _detectionTimer;
   int _processingFrameCount = 0;
   bool _isInitializing = true;
-  String _detectionServerUrl = 'http://192.168.3.8:5556'; // Replace with your server address
+  String _detectionServerUrl = 'http://192.168.3.8:5556';
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
-  bool _lastWeaponDetectedState = false; // Track state changes
+  bool _lastWeaponDetectedState = false;
   late EmailService _emailService;
   bool _emailNotificationsEnabled = false;
   String _emailConfigured = '';
@@ -53,10 +52,7 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   
   Future<void> _initializeAll() async {
     try {
-      // Initialize detector first - this might take some time
       await _initializeDetector();
-      
-      // Then initialize the camera
       await _initializeCamera();
       
       if (mounted) {
@@ -76,7 +72,6 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   }
 
   Future<void> _initializeDetector() async {
-    // Use the direct Python bridge
     _weaponDetector = DirectPythonBridge();
     
     try {
@@ -103,7 +98,6 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   
   Future<void> _initializeCamera() async {
     try {
-      // Get available cameras
       _cameras = await availableCameras();
       
       if (_cameras.isEmpty) {
@@ -111,10 +105,8 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
         return;
       }
       
-      // Use the first camera by default (usually back camera)
       final CameraDescription camera = _cameras.first;
       
-      // Initialize controller
       _cameraController = CameraController(
         camera,
         ResolutionPreset.medium,
@@ -137,60 +129,78 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   }
   
   void _initializeNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-    
-    final DarwinInitializationSettings initializationSettingsIOS =
-      DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
+    try {
+      const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+      
+      const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
+      
+      const InitializationSettings initializationSettings = InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsIOS,
       );
-    
-    final InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
-    
-    await _notificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse details) {
-        // You can add navigation to the app when notification is tapped
-        print('Notification tapped: ${details.payload}');
-      },
-    );
-    
-    // Request notification permissions
-    if (Platform.isIOS) {
-      await _notificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          );
-    } else if (Platform.isAndroid) {
-      await _notificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestPermission();
+      
+      await _notificationsPlugin.initialize(
+        initializationSettings,
+        onDidReceiveNotificationResponse: (NotificationResponse details) {
+          print('Notification tapped: ${details.payload}');
+        },
+      );
+      
+      // Verificação de plataforma envolvida em try-catch
+      try {
+        // Verifica se as classes de plataforma específica estão disponíveis antes
+        final isPlatformAvailable = Platform.isAndroid || Platform.isIOS;
+        
+        if (isPlatformAvailable) {
+          if (Platform.isIOS) {
+            await _notificationsPlugin
+                .resolvePlatformSpecificImplementation<
+                    IOSFlutterLocalNotificationsPlugin>()
+                ?.requestPermissions(
+                  alert: true,
+                  badge: true,
+                  sound: true,
+                );
+          } else if (Platform.isAndroid) {
+            await _notificationsPlugin
+                .resolvePlatformSpecificImplementation<
+                    AndroidFlutterLocalNotificationsPlugin>()
+                ?.requestPermission();
+          }
+        }
+      } catch (e) {
+        // Silenciosamente ignora erros de plataforma (ex: na web)
+        print('Ignorando erro de plataforma em notificações: $e');
+      }
+    } catch (e) {
+      print('Erro ao inicializar sistema de notificações: $e');
     }
   }
   
   void _initializeEmailService() {
-    // You can load these values from shared preferences or settings
-    _emailService = EmailService(
-      smtpServer: 'smtp.gmail.com', // Use your SMTP server
-      smtpPort: 587, // Port may vary depending on provider
-      useSSL: false, // Use SSL or TLS
-      username: 'rafaprimak1@gmail.com', // Email address
-      password: 'idht rkmg hypo fbfs', // Email password or app password
-      recipients: ['recipient1@example.com', 'recipient2@example.com'], // List of recipients
-    );
-    
-    // You should load this from settings
-    _emailConfigured = 'rafaprimak1@gmail.com';
+    try {
+      _emailService = EmailService(
+        smtpServer: 'smtp.gmail.com',
+        smtpPort: 587,
+        useSSL: false, // Para Gmail, o método factory 'gmail' será usado
+        username: 'rafaprimak1@gmail.com',
+        password: 'idht rkmg hypo fbfs', // IMPORTANTE: revogue esta senha e crie uma nova após corrigir o problema
+        recipients: [], // Lista vazia inicialmente
+      );
+      
+      _emailConfigured = 'rafaprimak1@gmail.com';
+      _emailNotificationsEnabled = false;
+      
+      print('📧 Serviço de email inicializado');
+    } catch (e) {
+      print('❌ Erro ao inicializar serviço de email: $e');
+    }
   }
   
   void _startDetection() {
@@ -200,10 +210,8 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
       return;
     }
     
-    // Use a timer to regularly sample frames rather than process every frame
-    // More conservative timing to reduce load (every 1 second)
     _detectionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_processingFrameCount < 1) { // Only allow one concurrent processing
+      if (_processingFrameCount < 1) {
         _processingFrameCount++;
         _captureAndProcessFrame();
       }
@@ -217,17 +225,11 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
     }
     
     try {
-      // Take the picture
       final XFile imageFile = await _cameraController!.takePicture();
-      
-      // Get the bytes directly
       final Uint8List bytes = await imageFile.readAsBytes();
-      
-      // Encode to base64 for server
       final String base64Image = base64.encode(bytes);
       
       try {
-        // Send to server
         final response = await http.post(
           Uri.parse('$_detectionServerUrl/detection/detect'),
           headers: {'Content-Type': 'application/json'},
@@ -244,21 +246,34 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
             setState(() {
               _weaponDetected = result['weapons_detected'] == true;
               
-              // Handle notifications
+              if (result['detections'] != null) {
+                print('Detecções encontradas:');
+                for (var detection in result['detections']) {
+                  final isWeapon = detection['is_weapon'] ?? false;
+                  print('  - ${detection['class']} (${detection['confidence']?.toStringAsFixed(2)}) [${isWeapon ? 'ARMA' : 'OUTROS'}]');
+                }
+              }
+              
               if (_weaponDetected && !_lastWeaponDetectedState) {
-                // Local notification
                 final message = result['message'] ?? 
                   'Arma detectada na câmera ${widget.cameraInfo.name}!';
                 
+                print('🚨 ENVIANDO ALERTA: $message');
+                
                 _showWeaponDetectionNotification(message);
                 
-                // Send email if enabled
                 if (_emailNotificationsEnabled && _weaponDetected) {
-                  _sendDetectionEmail(
-                    bytes,
-                    message,
-                    result['detections'] ?? [],
-                  );
+                  final weaponDetections = (result['detections'] as List?)
+                      ?.where((detection) => detection['is_weapon'] == true)
+                      .toList() ?? [];
+                  
+                  if (weaponDetections.isNotEmpty) {
+                    _sendDetectionEmail(
+                      bytes,
+                      message,
+                      weaponDetections,
+                    );
+                  }
                 }
               }
               
@@ -285,7 +300,6 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
           _showConnectionError();
         }
       } finally {
-        // Clean up
         try {
           await File(imageFile.path).delete().catchError((_) => File(imageFile.path));
         } catch (_) {}
@@ -300,28 +314,51 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
   Future<void> _sendDetectionEmail(
     Uint8List imageBytes,
     String detectionMessage,
-    List detections
+    List weaponDetections
   ) async {
     try {
-      // Format detections for the email
-      final formattedDetections = detections.map<Map<String, dynamic>>((detection) {
-        if (detection is Map) {
-          return {
-            'class': detection['class'] ?? 'Unknown',
-            'confidence': detection['confidence'] ?? 0.0,
-            'box': detection['box'] ?? [],
-          };
-        } else if (detection is List && detection.length >= 3) {
-          return {
-            'class': detection[0],
-            'confidence': detection[1],
-            'box': detection[2],
-          };
-        }
-        return {'class': 'Unknown', 'confidence': 0.0, 'box': []};
-      }).toList();
+      // Verificar se o serviço de email está corretamente configurado
+      if (_emailService.recipients.isEmpty) {
+        print('❌ Nenhum destinatário configurado. Configure as notificações por email.');
+        return;
+      }
       
-      print('Sending email notification...');
+      final formattedDetections = weaponDetections.map<Map<String, dynamic>?>((detection) {
+        if (detection is Map) {
+          final className = detection['class']?.toString().toLowerCase() ?? '';
+          final weaponClasses = ['gun', 'pistol', 'rifle', 'firearms', 'knife', 'weapon'];
+          final isWeapon = weaponClasses.any((weaponClass) => className.contains(weaponClass));
+          
+          if (isWeapon) {
+            return {
+              'class': detection['class'] ?? 'Arma desconhecida',
+              'confidence': detection['confidence'] ?? 0.0,
+              'box': detection['box'] ?? [],
+            };
+          }
+        } else if (detection is List && detection.length >= 3) {
+          final className = detection[0]?.toString().toLowerCase() ?? '';
+          final weaponClasses = ['gun', 'pistol', 'rifle', 'firearms', 'knife', 'weapon'];
+          final isWeapon = weaponClasses.any((weaponClass) => className.contains(weaponClass));
+          
+          if (isWeapon) {
+            return {
+              'class': detection[0] ?? 'Arma desconhecida',
+              'confidence': detection[1] ?? 0.0,
+              'box': detection[2] ?? [],
+            };
+          }
+        }
+        // Changed from return null; to return a nullable map type
+        return null; 
+      }).where((detection) => detection != null).cast<Map<String, dynamic>>().toList();
+      
+      if (formattedDetections.isEmpty) {
+        print('❌ Nenhuma detecção de arma válida após filtragem');
+        return;
+      }
+      
+      print('📧 Enviando email com ${formattedDetections.length} detecções de armas...');
       
       final success = await _emailService.sendWeaponDetectionAlert(
         cameraName: widget.cameraInfo.name,
@@ -329,137 +366,507 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
         detectionMessage: detectionMessage,
         detections: formattedDetections,
         imageBytes: imageBytes,
-        imageFilename: 'detection_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        imageFilename: 'weapon_detection_${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
       
       if (success) {
-        print('Email alert sent successfully');
+        print('✅ Email de alerta enviado com sucesso');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.email, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Email de alerta enviado com sucesso!'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       } else {
-        print('Failed to send email alert');
+        print('❌ Falha ao enviar email de alerta');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.email_outlined, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Falha ao enviar email de alerta'),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       }
     } catch (e) {
-      print('Error sending email: $e');
+      print('❌ Erro ao enviar email: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Erro ao enviar email: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
-  
-  Future<void> _showWeaponDetectionNotification(String message) async {
-    final AndroidNotificationDetails androidPlatformChannelSpecifics =
-      AndroidNotificationDetails(
-        'weapon_detection_channel',
-        'Weapon Detection Alerts',
-        channelDescription: 'Alerts when weapons are detected by the camera',
-        importance: Importance.max,
-        priority: Priority.high,
-        ticker: 'Alerta de Segurança',
-        color: Colors.red,
-        enableLights: true,
-        enableVibration: true,
-        vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 500]),
-        icon: '@mipmap/ic_launcher',
-      );
-      
-    const DarwinNotificationDetails iOSPlatformChannelSpecifics =
-      DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-        sound: 'alarmsound.wav',
-        badgeNumber: 1,
-      );
-      
-    final NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-      iOS: iOSPlatformChannelSpecifics,
-    );
+
+  void _showEmailSettingsDialog() {
+    final emailController = TextEditingController(text: _emailConfigured);
+    final passwordController = TextEditingController();
+    final recipientController = TextEditingController();
     
-    await _notificationsPlugin.show(
-      0,
-      'ALERTA DE SEGURANÇA!',
-      message,
-      platformChannelSpecifics,
-      payload: 'weapon_detected',
-    );
-  }
-  
-  void _showConnectionError() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.white),
-            SizedBox(width: 10),
-            Expanded(child: Text('Não foi possível conectar ao servidor de detecção. Verifique as configurações.')),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 5),
-        action: SnackBarAction(
-          label: 'CONFIGS',
-          textColor: Colors.white,
-          onPressed: _showServerSettingsDialog,
-        ),
+    final recipients = <String>[];
+    
+    try {
+      if (_emailService.recipients.isNotEmpty) {
+        recipients.addAll(_emailService.recipients);
+      }
+    } catch (e) {
+      print('Erro ao obter recipients existentes: $e');
+    }
+    
+    bool emailEnabled = _emailNotificationsEnabled;
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.email, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Configurações de Email'),
+              ],
+            ),
+            content: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.7,
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                              const SizedBox(width: 8),
+                              Text('Dicas importantes:', 
+                                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade800)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '• Para Gmail, use uma "Senha de App" em vez da senha normal\n'
+                            '• Ative a verificação em 2 etapas no Gmail\n'
+                            '• Emails serão enviados APENAS quando armas forem detectadas',
+                            style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email Remetente',
+                        hintText: 'seu.email@gmail.com',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.email),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Senha de App (Gmail)',
+                        hintText: 'xxxx xxxx xxxx xxxx',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.lock),
+                        helperText: 'Use Senha de App, não a senha normal',
+                      ),
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Destinatários dos Alertas:', 
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: recipientController,
+                            decoration: const InputDecoration(
+                              labelText: 'Email do Destinatário',
+                              hintText: 'destinatario@email.com',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.person_add),
+                            ),
+                            keyboardType: TextInputType.emailAddress,
+                            onSubmitted: (value) {
+                              if (value.isNotEmpty && value.contains('@')) {
+                                setDialogState(() {
+                                  recipients.add(value);
+                                  recipientController.clear();
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        // CORREÇÃO: Adicionamos try-catch para mais segurança
+                        IconButton(
+                          icon: const Icon(Icons.add_circle, color: Colors.green),
+                          onPressed: () {
+                            try {
+                              if (recipientController.text.isNotEmpty && 
+                                  recipientController.text.contains('@')) {
+                                setDialogState(() {
+                                  recipients.add(recipientController.text);
+                                  recipientController.clear();
+                                });
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Digite um email válido'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              print('Erro ao adicionar destinatário: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erro ao adicionar destinatário: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (recipients.isNotEmpty) ...[
+                      const Text('Lista de Destinatários:',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
+                      Container(
+                        // FIX 2: Definir altura fixa e não usar ListView.builder
+                        // que causa problemas de layout em AlertDialog
+                        height: 120,
+                        margin: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey.shade50,
+                        ),
+                        // Substituir ListView.builder por Column + SingleChildScrollView
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              for (int index = 0; index < recipients.length; index++)
+                                Card(
+                                  margin: const EdgeInsets.symmetric(vertical: 2),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.email, size: 16, color: Colors.blue),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(recipients[index], 
+                                            style: const TextStyle(fontSize: 14)),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, 
+                                            size: 18, color: Colors.red),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onPressed: () {
+                                            setDialogState(() {
+                                              recipients.removeAt(index);
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: emailEnabled ? Colors.green.shade50 : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: emailEnabled ? Colors.green.shade200 : Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            emailEnabled ? Icons.notifications_active : Icons.notifications_off,
+                            color: emailEnabled ? Colors.green : Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Ativar notificações por email',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: emailEnabled ? Colors.green.shade800 : Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                          Switch(
+                            value: emailEnabled,
+                            onChanged: (value) {
+                              setDialogState(() {
+                                emailEnabled = value;
+                              });
+                            },
+                            activeColor: Colors.green,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Adicionar botão de teste após os campos de email e senha
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.email_outlined),
+                      label: const Text('Testar Configuração de Email'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.black,
+                      ),
+                      onPressed: () async {
+                        if (emailController.text.isEmpty || 
+                            !emailController.text.contains('@') ||
+                            passwordController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Preencha email e senha para testar'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                          return;
+                        }
+                        
+                        // Mostrar indicador de progresso
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) => const AlertDialog(
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 16),
+                                Text('Testando conexão com servidor de email...'),
+                              ],
+                            ),
+                          ),
+                        );
+                        
+                        // Criar uma instância temporária do EmailService para teste
+                        final testService = EmailService(
+                          smtpServer: 'smtp.gmail.com',
+                          smtpPort: 587,
+                          useSSL: false,
+                          username: emailController.text.trim(),
+                          password: passwordController.text.trim(),
+                          recipients: ['test@example.com'], // Apenas para teste
+                        );
+                        
+                        // Testar conexão
+                        final success = await testService.testConnection();
+                        
+                        // Fechar diálogo de progresso
+                        Navigator.of(context).pop();
+                        
+                        // Mostrar resultado
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(
+                                  success ? Icons.check_circle : Icons.error_outline,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    success
+                                        ? 'Conexão com servidor de email bem-sucedida!'
+                                        : 'Falha ao conectar ao servidor de email. Verifique os logs.',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: success ? Colors.green : Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                            duration: const Duration(seconds: 5),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.save),
+                label: const Text('Salvar Configuração'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  try {
+                    if (emailEnabled) {
+                      if (emailController.text.isEmpty || 
+                          !emailController.text.contains('@')) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Digite um email válido'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      
+                      if (passwordController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Digite a senha de app'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      
+                      if (recipients.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Adicione pelo menos um destinatário'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                    }
+                    
+                    if (emailEnabled) {
+                      _emailService = EmailService(
+                        smtpServer: 'smtp.gmail.com',
+                        smtpPort: 587,
+                        useSSL: false,
+                        username: emailController.text.trim(),
+                        password: passwordController.text.trim(),
+                        recipients: List<String>.from(recipients), // Criamos uma cópia segura
+                      );
+                      
+                      setState(() {
+                        _emailConfigured = emailController.text.trim();
+                        _emailNotificationsEnabled = emailEnabled;
+                      });
+                      
+                      Navigator.pop(context);
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              const Icon(Icons.check_circle, color: Colors.white),
+                              const SizedBox(width: 8),
+                              Text(emailEnabled 
+                                ? 'Notificações por email ativadas! (${recipients.length} destinatários)' 
+                                : 'Notificações por email desativadas'),
+                            ],
+                          ),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    } else {
+                      // Desabilitar notificações
+                      setState(() {
+                        _emailNotificationsEnabled = false;
+                      });
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Row(
+                            children: [
+                              Icon(Icons.notifications_off, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text('Notificações por email desativadas'),
+                            ],
+                          ),
+                          backgroundColor: Colors.grey,
+                          behavior: SnackBarBehavior.floating,
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    print('Erro ao salvar configurações: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erro ao salvar configurações: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          );
+        }
       ),
     );
   }
   
-  void _stopDetection() {
-    _detectionTimer?.cancel();
-    _detectionTimer = null;
-  }
-  
-  void _toggleDetection() {
-    setState(() {
-      _isDetectionEnabled = !_isDetectionEnabled;
-    });
-    
-    if (_isDetectionEnabled && _isDetectorReady) {
-      _startDetection();
-    } else {
-      _stopDetection();
-      _weaponDetected = false;
-      _lastWeaponDetectedState = false;
-      // Cancel any active notifications
-      _notificationsPlugin.cancelAll();
-    }
-  }
-  
-  @override
-  void dispose() {
-    _stopDetection();
-    // Cancel all notifications when the screen is disposed
-    _notificationsPlugin.cancelAll();
-    if (_cameraController != null) {
-      _cameraController!.dispose();
-      _cameraController = null;
-    }
-    _weaponDetector?.dispose();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Only handle lifecycle changes if the camera was initialized
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
-    
-    if (state == AppLifecycleState.inactive) {
-      // Free resources when app is inactive
-      _stopDetection();
-      _cameraController?.dispose();
-      _cameraController = null;
-    } else if (state == AppLifecycleState.resumed) {
-      // Re-initialize when app is resumed
-      _initializeCamera().then((_) {
-        if (_isDetectionEnabled && _isDetectorReady) {
-          _startDetection();
-        }
-      });
-    }
-  }
-
   void _showError(String message) {
     if (!mounted) return;
     
@@ -478,7 +885,7 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Row(
+        title: const Row(
           children: [
             Icon(Icons.cloud_outlined, color: Colors.blue),
             SizedBox(width: 8),
@@ -492,20 +899,20 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
             Text('Digite o endereço IP do seu computador onde o servidor está rodando:',
               style: TextStyle(fontSize: 13, color: Colors.grey[700]),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             TextField(
               controller: serverController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'URL do Servidor',
                 hintText: 'http://192.168.x.x:5556',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.link),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             ElevatedButton.icon(
-              icon: Icon(Icons.network_check),
-              label: Text('Testar Conexão'),
+              icon: const Icon(Icons.network_check),
+              label: const Text('Testar Conexão'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
               ),
@@ -517,7 +924,7 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
                   
                   if (response.statusCode == 200) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
+                      const SnackBar(
                         content: Text('Conexão com servidor estabelecida com sucesso!'),
                         backgroundColor: Colors.green,
                       ),
@@ -545,198 +952,20 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar'),
+            child: const Text('Cancelar'),
           ),
           ElevatedButton.icon(
-            icon: Icon(Icons.save),
-            label: Text('Salvar'),
+            icon: const Icon(Icons.save),
+            label: const Text('Salvar'),
             onPressed: () {
               setState(() {
                 _detectionServerUrl = serverController.text;
               });
               Navigator.pop(context);
-              // Testing connection after saving
               _testServerConnection();
             },
           ),
         ],
-      ),
-    );
-  }
-
-  void _showEmailSettingsDialog() {
-    final emailController = TextEditingController(text: _emailConfigured);
-    final passwordController = TextEditingController();
-    final recipientController = TextEditingController();
-    final recipients = <String>[];
-    
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: Row(
-              children: [
-                Icon(Icons.email, color: Colors.blue),
-                SizedBox(width: 8),
-                Text('Configurações de Email'),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Configure o email para enviar alertas quando armas forem detectadas:',
-                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                  ),
-                  SizedBox(height: 16),
-                  TextField(
-                    controller: emailController,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  SizedBox(height: 12),
-                  TextField(
-                    controller: passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Senha',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.lock),
-                    ),
-                    obscureText: true,
-                  ),
-                  SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: recipientController,
-                          decoration: InputDecoration(
-                            labelText: 'Destinatário',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.person),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.add),
-                        onPressed: () {
-                          if (recipientController.text.isNotEmpty) {
-                            setState(() {
-                              recipients.add(recipientController.text);
-                              recipientController.clear();
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  if (recipients.isNotEmpty) ...[
-                    Text('Destinatários:'),
-                    Container(
-                      height: 100,
-                      margin: EdgeInsets.only(top: 8),
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: ListView.builder(
-                        itemCount: recipients.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
-                              children: [
-                                Expanded(child: Text(recipients[index])),
-                                IconButton(
-                                  icon: Icon(Icons.delete, size: 20),
-                                  onPressed: () {
-                                    setState(() {
-                                      recipients.removeAt(index);
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                  SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text('Ativar notificações por email:'),
-                      Switch(
-                        value: _emailNotificationsEnabled,
-                        onChanged: (value) {
-                          setState(() {
-                            _emailNotificationsEnabled = value;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Cancelar'),
-              ),
-              ElevatedButton.icon(
-                icon: Icon(Icons.save),
-                label: Text('Salvar'),
-                onPressed: () {
-                  if (emailController.text.isNotEmpty && 
-                      passwordController.text.isNotEmpty && 
-                      recipients.isNotEmpty) {
-                    // Create a new email service
-                    _emailService = EmailService(
-                      smtpServer: 'smtp.gmail.com',
-                      smtpPort: 587,
-                      useSSL: false,
-                      username: emailController.text,
-                      password: passwordController.text,
-                      recipients: recipients,
-                    );
-                    
-                    setState(() {
-                      _emailConfigured = emailController.text;
-                    });
-                    Navigator.pop(context);
-                    
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Configuração de email salva'),
-                        backgroundColor: Colors.green,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Preencha todos os campos'),
-                        backgroundColor: Colors.red,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
-          );
-        }
       ),
     );
   }
@@ -751,7 +980,6 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
       print('Server response: ${response.statusCode} - ${response.body}');
       
       if (response.statusCode == 200) {
-        // Now start the detector
         final detectorStarted = await _startDetector();
         
         setState(() {
@@ -797,7 +1025,180 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
       return false;
     }
   }
-  
+
+  Future<void> _showWeaponDetectionNotification(String message) async {
+    try {
+      // Não pode ser const porque contém o parâmetro message que é dinâmico
+      final AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+        'weapon_detection_channel',
+        'Weapon Detection Alerts',
+        channelDescription: 'Notificações de detecção de armas',
+        importance: Importance.max,
+        priority: Priority.high,
+        color: Colors.red,
+        enableVibration: true,
+        enableLights: true,
+        ledColor: Colors.red,
+        ledOnMs: 1000,
+        ledOffMs: 500,
+        styleInformation: BigTextStyleInformation(
+          message, // Valor dinâmico, não permite const
+          htmlFormatBigText: false,
+          contentTitle: '🚨 ALERTA DE SEGURANÇA',
+          htmlFormatContentTitle: false,
+          summaryText: 'Sistema de Detecção de Armas',
+          htmlFormatSummaryText: false,
+        ),
+      );
+
+      // Esta parte pode continuar const
+      const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+          DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        sound: 'default',
+        categoryIdentifier: 'weapon_alert',
+      );
+
+      // Precisa ser final porque combina const com não-const
+      final NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iOSPlatformChannelSpecifics,
+      );
+
+      // Usa um ID único baseado no timestamp
+      final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      
+      await _notificationsPlugin.show(
+        notificationId,
+        '🚨 ALERTA DE SEGURANÇA',
+        message,
+        platformChannelSpecifics,
+        payload: 'weapon_detected_${widget.cameraInfo.id}',
+      );
+
+      print('✅ Notificação local enviada: $message');
+    } catch (e) {
+      print('❌ Erro ao mostrar notificação: $e');
+    }
+  }
+
+  void _showConnectionError() {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.wifi_off, color: Colors.white),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text('Erro de conexão com o servidor de detecção'),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Configurar',
+          textColor: Colors.white,
+          onPressed: _showServerSettingsDialog,
+        ),
+      ),
+    );
+  }
+
+  void _toggleDetection() {
+    if (!_isDetectorReady) {
+      _showError('Detector não está pronto. Verifique a conexão com o servidor.');
+      return;
+    }
+
+    if (_isDetectionEnabled) {
+      _stopDetection();
+    } else {
+      _startDetection();
+    }
+
+    setState(() {
+      _isDetectionEnabled = !_isDetectionEnabled;
+    });
+
+    final message = _isDetectionEnabled 
+        ? 'Detecção de armas ativada' 
+        : 'Detecção de armas desativada';
+        
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              _isDetectionEnabled ? Icons.security : Icons.security_outlined,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 8),
+            Text(message),
+          ],
+        ),
+        backgroundColor: _isDetectionEnabled ? Colors.green : Colors.grey[600],
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    HapticFeedback.mediumImpact();
+  }
+
+  void _stopDetection() {
+    _detectionTimer?.cancel();
+    _detectionTimer = null;
+    _processingFrameCount = 0;
+    
+    if (mounted) {
+      setState(() {
+        _weaponDetected = false;
+        _lastDetectionMessage = '';
+        _lastWeaponDetectedState = false;
+      });
+    }
+    
+    print('🛑 Detecção parada');
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final CameraController? cameraController = _cameraController;
+    
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      return;
+    }
+    
+    if (state == AppLifecycleState.inactive) {
+      if (_isDetectionEnabled) {
+        _stopDetection();
+      }
+      cameraController.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      _initializeCamera().then((_) {
+        if (_isDetectionEnabled && _isDetectorReady) {
+          _startDetection();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _stopDetection();
+    _cameraController?.dispose();
+    _weaponDetector?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -845,74 +1246,57 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
                     fit: StackFit.expand,
                     children: [
                       // Camera Preview
-                      _isInitialized && _cameraController != null
-                          ? CameraPreview(_cameraController!)
-                          : const Center(child: Text('Câmera não disponível')),
+                      if (_isInitialized && _cameraController != null)
+                        CameraPreview(_cameraController!)
+                      else
+                        const Center(
+                          child: CircularProgressIndicator(),
+                        ),
                       
                       // Weapon detection alert
                       if (_weaponDetected)
-                        Positioned(
-                          top: 20,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 24),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
+                        Container(
+                          color: Colors.red.withOpacity(0.3),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.warning_amber_rounded, color: Colors.white),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _lastDetectionMessage,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                const Icon(
+                                  Icons.warning,
+                                  size: 80,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  '🚨 ARMA DETECTADA',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                                if (_lastDetectionMessage.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      _lastDetectionMessage,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
                         ),
-                        
-                      // Detector status indicator
-                      Positioned(
-                        bottom: 20,
-                        right: 20,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: _isDetectorReady ? 
-                                    (_isDetectionEnabled ? Colors.green : Colors.orange) : 
-                                    Colors.red,
-                                ),
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                _isDetectorReady ? 
-                                  (_isDetectionEnabled ? "Detector ativo" : "Detector pronto") : 
-                                  "Detector desconectado",
-                                style: const TextStyle(color: Colors.white, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -925,14 +1309,28 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.photo_camera),
-                        color: Colors.white,
+                        icon: Icon(
+                          _isDetectionEnabled ? Icons.security : Icons.security_outlined,
+                          color: _isDetectionEnabled ? Colors.green : Colors.white,
+                          size: 32,
+                        ),
+                        onPressed: _isDetectorReady ? _toggleDetection : null,
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 32,
+                        ),
                         onPressed: _capturePhoto,
                       ),
                       IconButton(
-                        icon: Icon(_isDetectionEnabled ? Icons.visibility : Icons.visibility_off),
-                        color: _isDetectionEnabled ? Colors.green : Colors.white,
-                        onPressed: _isDetectorReady ? _toggleDetection : null,
+                        icon: const Icon(
+                          Icons.settings,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                        onPressed: _showServerSettingsDialog,
                       ),
                     ],
                   ),
@@ -948,7 +1346,6 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
     }
     
     try {
-      // Briefly disable detection while taking a photo
       final wasDetectionEnabled = _isDetectionEnabled;
       if (wasDetectionEnabled) {
         _stopDetection();
@@ -956,7 +1353,6 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
       
       await _cameraController!.takePicture();
       
-      // Re-enable detection if it was enabled
       if (wasDetectionEnabled && mounted) {
         setState(() {
           _isDetectionEnabled = true;
@@ -964,20 +1360,16 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
         _startDetection();
       }
       
-      // Show a success message
       if (!mounted) return;
       
-      // Add haptic feedback
       HapticFeedback.mediumImpact();
       
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Foto capturada com sucesso!'),
           behavior: SnackBarBehavior.floating,
         ),
       );
-      
-      // You could show the captured photo in a dialog or navigate to a photo view screen
       
     } catch (e) {
       _showError('Erro ao capturar foto: $e');
@@ -990,13 +1382,11 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
     final currentCameraIndex = _cameras.indexOf(_cameraController!.description);
     final nextCameraIndex = (currentCameraIndex + 1) % _cameras.length;
     
-    // Stop detection before switching
     final wasDetectionEnabled = _isDetectionEnabled;
     if (wasDetectionEnabled) {
       _stopDetection();
     }
     
-    // Dispose the old camera controller
     await _cameraController?.dispose();
     _cameraController = null;
     
@@ -1006,7 +1396,6 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
       _isInitialized = false;
     });
     
-    // Create and initialize the new camera controller
     _cameraController = CameraController(
       _cameras[nextCameraIndex],
       ResolutionPreset.medium,
@@ -1020,14 +1409,11 @@ class _DeviceCameraViewScreenState extends State<DeviceCameraViewScreen> with Wi
       if (mounted) {
         setState(() {
           _isInitialized = true;
-          
-          // Restore detection state if it was enabled before
           if (wasDetectionEnabled) {
             _isDetectionEnabled = true;
           }
         });
         
-        // Restart detection if needed
         if (wasDetectionEnabled && _isDetectorReady) {
           _startDetection();
         }

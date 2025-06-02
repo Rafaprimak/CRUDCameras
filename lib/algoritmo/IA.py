@@ -182,10 +182,17 @@ class WeaponDetector:
                 traceback.print_exc()
                 
     def _is_weapon_class(self, class_name):
-        """Check if the class name represents a weapon"""
-        weapon_classes = ['gun', 'pistol', 'rifle', 'knife', 'weapon', 'firearms', 'arma']
+        """Check if the class name represents a weapon that should trigger alerts"""
+        # APENAS estas classes específicas devem gerar alertas
+        weapon_classes = ['gun', 'pistol', 'rifle', 'firearms', 'knife', 'weapon']
         class_lower = class_name.lower()
-        return any(wc in class_lower for wc in weapon_classes)
+        
+        # Verificação exata para evitar falsos positivos
+        for weapon_class in weapon_classes:
+            if weapon_class in class_lower:
+                return True
+        
+        return False
                 
     def _check_detection_threshold(self):
         """Check if detection threshold has been reached and trigger notification if necessary"""
